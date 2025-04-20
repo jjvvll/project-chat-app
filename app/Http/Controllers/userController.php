@@ -18,6 +18,10 @@ class userController extends Controller
         return view('dashboard', ['users' => $users]);
     }
 
+    public function userChat(User $id){
+        return view ('user-chat', compact('id'));
+    }
+
     /**
      * Show the form for creating a new resource.
      */
