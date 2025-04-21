@@ -10,7 +10,7 @@ Route::controller(userController::class)->group(function() {
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-    Route::get('chat/{id}', 'userChat')
+    Route::get('chat/{userId}', 'userChat')
     ->middleware(['auth', 'verified'])
     ->name('chat');
 });

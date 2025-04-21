@@ -18,8 +18,8 @@ class userController extends Controller
         return view('dashboard', ['users' => $users]);
     }
 
-    public function userChat(User $id){
-        return view ('user-chat', compact('id'));
+    public function userChat(User $userId){
+        return view ('user-chat', compact('userId'));
     }
 
     /**
