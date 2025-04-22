@@ -21,8 +21,17 @@ class Message extends Model
     }
 
     public function receiver()  {
-        return $this->belongsTo(User::class,'receiver', 'id' );
+        return $this->belongsTo(User::class,'receiver_id', 'id' );
     }
 
+    /**
+     * override created_at time
+     */
+    // protected static function boot(){
+    //     parent::boot();
 
+    //     static::creating(function ($model){
+    //         $model->created_at = Carbon::now();
+    //     });
+    // }
 }

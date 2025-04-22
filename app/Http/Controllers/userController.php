@@ -13,13 +13,12 @@ class userController extends Controller
      */
     public function index()
     {
-        $users = User::where('id', '!=', Auth::user()->id)->get();
-
+        $users = User::where('id', '!=', Auth::user()->id)->withCount(['unreadMessages'])->get();
         return view('dashboard', ['users' => $users]);
     }
 
     public function userChat(User $userId){
-        return view ('user-chat', compact('userId'));
+        return view ('user-chat', data: compact('userId'));
     }
 
     /**

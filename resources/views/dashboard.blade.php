@@ -44,6 +44,9 @@
                                                 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373
                                                 3.746 2.25 5.14 2.25 6.741v6.018Z" />
                                         </svg>
+                                        <span class="{{$user->unread_messages_count ?'bg-red-600 text-white px-2 py-1 rounded-full text-xs' : ''}}">
+                                            {{$user->unread_messages_count ? $user->unread_messages_count : ''}}
+                                        </span>
                                        </a>
                                     </td>
                                 </tr>
