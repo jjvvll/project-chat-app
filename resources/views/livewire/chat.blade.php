@@ -330,3 +330,22 @@
         </div>
     </div>
 </div>
+
+<script type="module">
+    const chatContainer = document.getElementById('chat-container');
+    Livewire.on('messages-updated', () =>{
+       setTimeout(()=>{
+            scrollToLatestMessage()
+       }, 50);
+    });
+
+    window.onload = () =>{
+        scrollToLatestMessage();
+    }
+
+    function scrollToLatestMessage() {
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+}
+</script>

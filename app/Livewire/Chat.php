@@ -5,6 +5,9 @@ namespace App\Livewire;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Message;
+use App\Events\MessageSentEvent;
+use Livewire\Attributes\On;
+
 
 
 class Chat extends Component
@@ -26,6 +29,7 @@ class Chat extends Component
         // $this->user = $this->getUser($userId); no need we used route model binding
         $this->senderId = Auth::user()->id;
         $this->receiverId = $userId->id;
+
         $this->messages =  $this->getMessages();
         // dd(vars: $messages);
 
@@ -37,9 +41,27 @@ class Chat extends Component
     }
 
     public function sendMessage(){
-        $this->saveMessage();
+        $sentMessage = $this->saveMessage();
+
+        #assuigning latest message
+        $this->messages[] = $sentMessage;
+
+        #broascast the message
+        broadcast(new MessageSentEvent($sentMessage));
 
         $this->message =null;
+
+        #dispatching event to scroll to the bottom
+        $this->dispatch('messages-updated');
+    }
+
+    #[On('echo-private:chat-channel.{senderId},MessageSentEvent')]
+    public function listenMessage($event){
+        $newMessage =  Message::find($event['message']['id'])->load('sender:id,name', 'receiver:id,name');
+        $this->messages[] = $newMessage;
+
+         #dispatching event to scroll to the bottom
+         $this->dispatch('messages-updated');
     }
 
     public function getMessages(){
