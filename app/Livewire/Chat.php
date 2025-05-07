@@ -6,6 +6,7 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Message;
 use App\Events\MessageSentEvent;
+use App\Events\UserTyping;
 use Livewire\Attributes\On;
 
 
@@ -21,7 +22,6 @@ class Chat extends Component
     public $messages;
     public $search;
     public $file;
-    public $userTyping;
 
     public function mount($userId){
         // dd($userId->name);
@@ -31,6 +31,7 @@ class Chat extends Component
         $this->receiverId = $userId->id;
 
         $this->messages =  $this->getMessages();
+        $this->dispatch('messages-updated');
         // dd(vars: $messages);
 
     }
@@ -76,6 +77,12 @@ class Chat extends Component
             $query->where('sender_id', $this->receiverId)
             ->where('receiver_id', $this->senderId);
         })->get();
+    }
+
+    public function userTyping(){
+
+        broadcast(new UserTyping($this->senderId, $this->receiverId))->toOthers();
+        //toothers make sure that the event is broadcasted to everybody else except the source
     }
 
     // function for sending message

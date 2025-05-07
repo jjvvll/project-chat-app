@@ -332,7 +332,14 @@
 </div>
 
 <script type="module">
-    const chatContainer = document.getElementById('chat-container');
+    let chatContainer = document.getElementById('chat-container');
+
+
+    window.Echo.private('chat-channel.{{ $senderId }}')
+    .listen('UserTyping', (event) => {
+        console.log(event);
+    });
+
     Livewire.on('messages-updated', () =>{
        setTimeout(()=>{
             scrollToLatestMessage()
