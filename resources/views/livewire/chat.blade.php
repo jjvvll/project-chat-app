@@ -332,12 +332,26 @@
 </div>
 
 <script type="module">
+    let typingTimeout = null;
     let chatContainer = document.getElementById('chat-container');
 
 
     window.Echo.private('chat-channel.{{ $senderId }}')
     .listen('UserTyping', (event) => {
         console.log(event);
+        const messageInput = document.getElementById('message-input');
+
+        if(messageInput){
+            messageInput.placeholder = 'Typing...'
+        }
+
+        clearTimeout(typingTimeout);
+
+        typingTimeout = setTimeout(() => {
+            if(messageInput){
+            messageInput.placeholder = 'Type here'
+        }
+        }, 2000);
     });
 
     Livewire.on('messages-updated', () =>{
