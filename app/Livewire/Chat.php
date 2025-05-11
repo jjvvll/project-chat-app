@@ -24,6 +24,7 @@ class Chat extends Component
     public $file;
 
     public function mount($userId){
+        $this->dispatch('messages-updated');
         // dd($userId->name);
 
         // $this->user = $this->getUser($userId); no need we used route model binding
@@ -31,13 +32,16 @@ class Chat extends Component
         $this->receiverId = $userId->id;
 
         $this->messages =  $this->getMessages();
-        $this->dispatch('messages-updated');
+
+        $this->markMessagesAsRead();
+
         // dd(vars: $messages);
 
     }
 
     public function render()
     {
+        $this->markMessagesAsRead();
         return view('livewire.chat');
     }
 
@@ -83,6 +87,13 @@ class Chat extends Component
 
         broadcast(new UserTyping($this->senderId, $this->receiverId))->toOthers();
         //toothers make sure that the event is broadcasted to everybody else except the source
+    }
+
+    public function markMessagesAsRead(){
+        Message::where('sender_id', $this->receiverId)
+        ->where('receiver_id', $this->senderId)
+        ->where('is_read', false)
+        ->update(['is_read' => true]);
     }
 
     // function for sending message

@@ -241,6 +241,19 @@
                 </div>
 
                 {{-- Bottom Message Search Box --}}
+
+                <div class="relative">
+                <!-- Typing Indicator (Hidden by default) -->
+                    <div id="typing-indicator" class="hidden absolute -top-7 left-8 flex items-center space-x-2">
+                        <img
+                        src="{{ asset('storage/images/typing-indicator.gif') }}"
+                        width="60"
+                        alt="Typing..."
+                        class="h-7 object-contain"
+                        >
+                        <span class="text-sm text-gray-500 font-medium">Typing...</span>  <!-- Larger text -->
+                    </div>
+                </div>
                 <form wire:submit="sendMessage"
                     class="w-full px-3 py-2 border-t border-gray-200 bg-white sticky bottom-0">
                     <div
@@ -335,24 +348,25 @@
     let typingTimeout = null;
     let chatContainer = document.getElementById('chat-container');
 
-
-    window.Echo.private('chat-channel.{{ $senderId }}')
+    window.Echo.private(`chat-channel.{{ $senderId }}`)
     .listen('UserTyping', (event) => {
-        console.log(event);
         const messageInput = document.getElementById('message-input');
+        const typingIndicator = document.getElementById('typing-indicator');
 
-        if(messageInput){
-            messageInput.placeholder = 'Typing...'
-        }
+        if (messageInput && typingIndicator) {
+        // Show the GIF
+        typingIndicator.classList.remove('hidden');
 
+        // Clear previous timeout (if any)
         clearTimeout(typingTimeout);
 
+        // Hide after 2 seconds of inactivity
         typingTimeout = setTimeout(() => {
-            if(messageInput){
-            messageInput.placeholder = 'Type here'
-        }
+            typingIndicator.classList.add('hidden');
         }, 2000);
+        }
     });
+
 
     Livewire.on('messages-updated', () =>{
        setTimeout(()=>{
