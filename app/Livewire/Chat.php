@@ -6,6 +6,7 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Message;
 use App\Events\MessageSentEvent;
+use App\Events\UnreadMessage;
 use App\Events\UserTyping;
 use Livewire\Attributes\On;
 
@@ -54,10 +55,19 @@ class Chat extends Component
         #broascast the message
         broadcast(new MessageSentEvent($sentMessage));
 
+        $unreadMessageCount = $this->getUnreadMessagesCount();
+
+        broadcast(new UnreadMessage($this->senderId, $this->receiverId, $unreadMessageCount))->toOthers();
+
         $this->message =null;
 
         #dispatching event to scroll to the bottom
         $this->dispatch('messages-updated');
+    }
+
+
+    public function getUnreadMessagesCount(){
+        return Message::where('receiver_id', $this->receiverId)->where('is_read', false)->count();
     }
 
     #[On('echo-private:chat-channel.{senderId},MessageSentEvent')]
