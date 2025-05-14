@@ -66,11 +66,20 @@
 <script type="module">
     window.Echo.private('unread-channel.{{Auth::user()->id}}')
     .listen('UnreadMessage', (event) => {
+        console.log(event);
 
     const unreadElementCount = document.getElementById(`unread-count-${event.senderId}`);
 
         if(unreadElementCount) {
             unreadElementCount.textContent = event.unreadMessageCount > 0 ? event.unreadMessageCount : '';
+
+            // Toggle classes conditionally
+            if (event.unreadMessageCount > 0) {
+
+                unreadElementCount.classList.add('bg-red-600', 'text-white', 'px-2', 'py-1', 'rounded-full', 'text-xs');
+            } else {
+                unreadElementCount.classList.remove('bg-red-600', 'text-white', 'px-2', 'py-1', 'rounded-full', 'text-xs');
+            }
         }
 });
 </script>

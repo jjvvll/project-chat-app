@@ -47,10 +47,12 @@ class Chat extends Component
     }
 
     public function sendMessage(){
+
         $sentMessage = $this->saveMessage();
 
         #assuigning latest message
         $this->messages[] = $sentMessage;
+        // dd($this->receiverId. "----".$sentMessage->sender_id );
 
         #broascast the message
         broadcast(new MessageSentEvent($sentMessage));
@@ -67,10 +69,12 @@ class Chat extends Component
 
 
     public function getUnreadMessagesCount(){
-        return Message::where('receiver_id', $this->receiverId)->where('is_read', false)->count();
+        return Message::where('receiver_id', $this->receiverId)
+        ->where('sender_id', $this->senderId)
+        ->where('is_read', false)->count();
     }
 
-    #[On('echo-private:chat-channel.{senderId},MessageSentEvent')]
+    #[On('echo-private:chat-channel.{senderId}.{receiverId},MessageSentEvent')]
     public function listenMessage($event){
         $newMessage =  Message::find($event['message']['id'])->load('sender:id,name', 'receiver:id,name');
         $this->messages[] = $newMessage;

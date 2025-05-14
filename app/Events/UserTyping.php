@@ -36,7 +36,7 @@ class UserTyping implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat-channel.'.$this->receiverId),
+            new PrivateChannel('chat-channel.'.$this->receiverId.'.'.$this->senderId),
         ];
     }
 

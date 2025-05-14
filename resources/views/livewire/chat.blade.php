@@ -348,7 +348,7 @@
     let typingTimeout = null;
     let chatContainer = document.getElementById('chat-container');
 
-    window.Echo.private(`chat-channel.{{ $senderId }}`)
+    window.Echo.private(`chat-channel.{{ $senderId }}.{{ $receiverId }}`)
     .listen('UserTyping', (event) => {
         const messageInput = document.getElementById('message-input');
         const typingIndicator = document.getElementById('typing-indicator');
