@@ -97,20 +97,19 @@
                                                             ? true
                                                             : false;
                                                     @endphp
-
+                                                    {{-- <p>{{asset( $message->folder_path) ? $message->folder_path : false}}</p> --}}
                                                     <div>
                                                         <span>
                                                             @if ($imgType)
-                                                                <a
-                                                                    href="{{ asset('chat_files/' . $message->file_path) }}">
-                                                                    <img src="{{ asset('chat_files/' . $message->file_path) }}"
+                                                                <a href="{{ asset( $message->folder_path) }}">
+                                                                    <img src="{{ asset( 'storage/'. $message->folder_path) }}"
                                                                         alt="file"
-                                                                        class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
+                                                                        class="w-30 h-20 rounded-lg object-cover border border-gray-300 shadow-md" />
                                                                 </a>
                                                             @else
                                                                 <a class="flex items-center justify-between bg-gray-200 px-3 py-2 rounded"
                                                                     download
-                                                                    href="{{ asset('chat_files/' . $message->file_path) }}">
+                                                                    href="{{ asset( 'storage/'. $message->folder_path) }}">
                                                                     <svg class="cursor-pointer"
                                                                         xmlns="http://www.w3.org/2000/svg"
                                                                         width="22" height="22"
@@ -138,7 +137,7 @@
                                                                         </g>
                                                                     </svg>
                                                                     <span
-                                                                        class="w-full max-w-64">{{ $message->file_name_original }}</span>
+                                                                        class="w-full max-w-64">{{ $message->file_original_name }}</span>
                                                                 </a>
                                                             @endif
                                                         </span>
@@ -181,16 +180,16 @@
                                                     @endphp
                                                     <span>
                                                         @if ($imgType)
-                                                            <a href="{{ asset('chat_files/' . $message->file_path) }}"
+                                                            <a href="{{ asset( 'storage/'.$message->folder_path) }}"
                                                                 target="_blank">
-                                                                <img src="{{ asset('chat_files/' . $message->file_path) }}"
+                                                                <img src="{{ asset( 'storage/'.$message->folder_path) }}"
                                                                     alt="file"
-                                                                    class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
+                                                                    class="w-30 h-20 rounded-lg object-cover border border-gray-300 shadow-md" />
                                                             </a>
                                                         @else
                                                             <a class="flex items-center justify-between bg-indigo-600 px-3 py-2 rounded text-white"
                                                                 download
-                                                                href="{{ asset('chat_files/' . $message->file_path) }}">
+                                                                href="{{ asset('storage/' . $message->file_path) }}">
                                                                 <svg class="cursor-pointer"
                                                                     xmlns="http://www.w3.org/2000/svg" width="22"
                                                                     height="22" viewBox="0 0 22 22"
@@ -218,7 +217,7 @@
                                                                     </g>
                                                                 </svg>
                                                                 <span
-                                                                    class="w-full max-w-64">{{ $message->file_name_original }}</span>
+                                                                    class="w-full max-w-64">{{ $message->file_original_name }}</span>
                                                             </a>
                                                         @endif
                                                     </span>
@@ -281,7 +280,7 @@
                             <label title="Attachment" for="fileUpload" class="cursor-pointer flex items-center">
 
                                 <input type="file" id="fileUpload" wire:model="file"
-                                    wire:change="sendFileMessage" class="hidden">
+                                    wire:change="file" class="hidden">
 
                                 <svg class="cursor-pointer" xmlns="http://www.w3.org/2000/svg" width="22"
                                     height="22" viewBox="0 0 22 22" fill="none">
