@@ -71,171 +71,75 @@
                     @foreach ($messages as $index => $message)
 
                         {{-- Message wrapper --}}
-                        <div id="message-{{ $index }}">
-                            @if ($message->sender->id != auth()->user()->id)
-                                {{-- Receiver Message --}}
-                                <div class="grid pb-3">
-                                    <div class="flex gap-2.5">
-                                        <img src="https://pagedone.io/asset/uploads/1710412177.png" alt="Shanay image"
-                                            class="w-10 h-11">
-                                        <div class="grid">
-                                            <h5 class="text-gray-900 text-sm font-semibold leading-snug pb-1">
-                                                {{ $message->sender->name }} </h5>
-                                            <div class="w-max grid">
+                <div id="message-{{ $index }}">
+                        @php
+                            $isSender = $message->sender->id === auth()->user()->id;
+                            $isImage = str_starts_with($message->file_type, 'image/');
+                            $timestamp = $message->created_at->isToday()
+                                ? $message->created_at->diffForHumans()
+                                : ($message->created_at->isCurrentWeek()
+                                    ? $message->created_at->format('l \a\t h:i A')
+                                    : $message->created_at->format('M j, Y \a\t h:i A'));
+                        @endphp
 
-                                                @if ($message->message)
-                                                    <div
-                                                        class="px-3.5 py-2 bg-gray-100 rounded-3xl rounded-tl-none justify-start items-center gap-3 inline-flex">
-                                                        <h5 class="text-gray-900 text-sm font-normal leading-snug">
-                                                            {{-- {{ $message->message }} --}}
-                                                            {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
-                                                        </h5>
-                                                    </div>
-                                                @else
-                                                    @php
-                                                        $imgType = str_starts_with($message->file_type, 'image/')
-                                                            ? true
-                                                            : false;
-                                                    @endphp
-                                                    {{-- <p>{{asset( $message->folder_path) ? $message->folder_path : false}}</p> --}}
-                                                    <div>
-                                                        <span>
-                                                            @if ($imgType)
-                                                                <a href="{{ asset( $message->folder_path) }}">
-                                                                    <img src="{{ asset( 'storage/'. $message->folder_path) }}"
-                                                                        alt="file"
-                                                                        class="w-30 h-20 rounded-lg object-cover border border-gray-300 shadow-md" />
-                                                                </a>
-                                                            @else
-                                                                <a class="flex items-center justify-between bg-gray-200 px-3 py-2 rounded"
-                                                                    download
-                                                                    href="{{ asset( 'storage/'. $message->folder_path) }}">
-                                                                    <svg class="cursor-pointer"
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        width="22" height="22"
-                                                                        viewBox="0 0 22 22" fill="none">
-                                                                        <g id="Attach 01">
-                                                                            <g id="Vector">
-                                                                                <path
-                                                                                    d="M14.9332 7.79175L8.77551 14.323C8.23854 14.8925 7.36794 14.8926 6.83097 14.323C6.294 13.7535 6.294 12.83 6.83097 12.2605L12.9887 5.72925M12.3423 6.41676L13.6387 5.04176C14.7126 3.90267 16.4538 3.90267 17.5277 5.04176C18.6017 6.18085 18.6017 8.02767 17.5277 9.16676L16.2314 10.5418M16.8778 9.85425L10.72 16.3855C9.10912 18.0941 6.49732 18.0941 4.88641 16.3855C3.27549 14.6769 3.27549 11.9066 4.88641 10.198L11.0441 3.66675"
-                                                                                    stroke="black" stroke-width="1.6"
-                                                                                    stroke-linecap="round"
-                                                                                    stroke-linejoin="round" />
-                                                                                <path
-                                                                                    d="M14.9332 7.79175L8.77551 14.323C8.23854 14.8925 7.36794 14.8926 6.83097 14.323C6.294 13.7535 6.294 12.83 6.83097 12.2605L12.9887 5.72925M12.3423 6.41676L13.6387 5.04176C14.7126 3.90267 16.4538 3.90267 17.5277 5.04176C18.6017 6.18085 18.6017 8.02767 17.5277 9.16676L16.2314 10.5418M16.8778 9.85425L10.72 16.3855C9.10912 18.0941 6.49732 18.0941 4.88641 16.3855C3.27549 14.6769 3.27549 11.9066 4.88641 10.198L11.0441 3.66675"
-                                                                                    stroke="black" stroke-opacity="0.2"
-                                                                                    stroke-width="1.6"
-                                                                                    stroke-linecap="round"
-                                                                                    stroke-linejoin="round" />
-                                                                                <path
-                                                                                    d="M14.9332 7.79175L8.77551 14.323C8.23854 14.8925 7.36794 14.8926 6.83097 14.323C6.294 13.7535 6.294 12.83 6.83097 12.2605L12.9887 5.72925M12.3423 6.41676L13.6387 5.04176C14.7126 3.90267 16.4538 3.90267 17.5277 5.04176C18.6017 6.18085 18.6017 8.02767 17.5277 9.16676L16.2314 10.5418M16.8778 9.85425L10.72 16.3855C9.10912 18.0941 6.49732 18.0941 4.88641 16.3855C3.27549 14.6769 3.27549 11.9066 4.88641 10.198L11.0441 3.66675"
-                                                                                    stroke="black" stroke-opacity="0.2"
-                                                                                    stroke-width="1.6"
-                                                                                    stroke-linecap="round"
-                                                                                    stroke-linejoin="round" />
-                                                                            </g>
-                                                                        </g>
-                                                                    </svg>
-                                                                    <span
-                                                                        class="w-full max-w-64">{{ $message->file_original_name }}</span>
-                                                                </a>
-                                                            @endif
-                                                        </span>
-                                                    </div>
-                                                @endif
+                        <div class="flex {{ $isSender ? 'justify-end' : 'justify-start' }} pb-3">
+                            <div class="flex gap-2.5 max-w-[50%]">
+                                @unless($isSender)
+                                    <img src="https://pagedone.io/asset/uploads/1710412177.png" alt="Profile"
+                                        class="w-10 h-11 rounded-full">
+                                @endunless
 
-                                                <div class="justify-end items-center inline-flex mb-2.5">
-                                                    <h6 class="text-gray-500 text-xs font-normal leading-4 py-1">
-                                                        <strong>{{ $message->formatted_date }}</strong>
-                                                        {{ $message->created_at->format('h:i A') }}
-                                                    </h6>
+                                <div class="grid gap-1">
+                                    <h5 class="text-sm font-semibold {{ $isSender ? 'text-right' : '' }}">
+                                        {{ $isSender ? 'You' : $message->sender->name }}
+                                    </h5>
+
+                                    @if ($message->message)
+                                        <div
+                                            class="{{ $isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' : 'bg-gray-100 text-gray-900 rounded-3xl rounded-tl-none' }} px-4 py-2 break-words">
+                                            {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
+                                        </div>
+                                    @endif
+
+                                    @if ($message->file_name)
+                                        @if ($isImage)
+                                            <div x-data="{ open: false }">
+                                                <img @click="open = true"
+                                                    src="{{ asset('storage/'.$message->folder_path) }}"
+                                                    alt="Image"
+                                                    class="w-30 h-20 rounded-lg object-cover border cursor-pointer hover:opacity-90 mt-2">
+
+                                                <div x-show="open" @click.away="open = false"
+                                                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
+                                                    <div class="relative max-w-4xl max-h-[90vh]">
+                                                        <img src="{{ asset('storage/'.$message->folder_path) }}"
+                                                            alt="Full view"
+                                                            class="max-w-full max-h-[80vh] object-contain">
+                                                        <button @click="open = false"
+                                                                class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300">
+                                                            ✕
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @else
-                                {{-- Sender Message --}}
-                                <div class="flex gap-2.5 justify-end pb-3">
-                                    <div class="">
-                                        <div class="grid mb-2">
-                                            <h5
-                                                class="text-right text-gray-900 text-sm font-semibold leading-snug pb-1">
-                                                You
-                                            </h5>
+                                        @else
+                                            <a href="{{ asset('storage/' . $message->folder_path) }}"
+                                                download
+                                                class="flex items-center gap-2 mt-2 px-3 py-2 rounded text-sm break-words
+                                                {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-black' }}">
+                                                📎 {{ $message->file_original_name }}
+                                            </a>
+                                        @endif
+                                    @endif
 
-                                            @if ($message->message)
-                                                <div class="px-3 py-2 bg-indigo-600 rounded-3xl rounded-tr-none">
-                                                    <h2 class="text-white text-sm font-normal leading-snug">
-                                                        {{-- {{ $message->message }} --}}
-                                                        {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
-                                                    </h2>
-                                                </div>
-                                            @else
-                                                <div>
-                                                    @php
-                                                        $imgType = str_starts_with($message->file_type, 'image/')
-                                                            ? true
-                                                            : false;
-                                                    @endphp
-                                                    <span>
-                                                        @if ($imgType)
-                                                            <a href="{{ asset( 'storage/'.$message->folder_path) }}"
-                                                                target="_blank">
-                                                                <img src="{{ asset( 'storage/'.$message->folder_path) }}"
-                                                                    alt="file"
-                                                                    class="w-30 h-20 rounded-lg object-cover border border-gray-300 shadow-md" />
-                                                            </a>
-                                                        @else
-                                                            <a class="flex items-center justify-between bg-indigo-600 px-3 py-2 rounded text-white"
-                                                                download
-                                                                href="{{ asset('storage/' . $message->file_path) }}">
-                                                                <svg class="cursor-pointer"
-                                                                    xmlns="http://www.w3.org/2000/svg" width="22"
-                                                                    height="22" viewBox="0 0 22 22"
-                                                                    fill="none">
-                                                                    <g id="Attach 01">
-                                                                        <g id="Vector">
-                                                                            <path
-                                                                                d="M14.9332 7.79175L8.77551 14.323C8.23854 14.8925 7.36794 14.8926 6.83097 14.323C6.294 13.7535 6.294 12.83 6.83097 12.2605L12.9887 5.72925M12.3423 6.41676L13.6387 5.04176C14.7126 3.90267 16.4538 3.90267 17.5277 5.04176C18.6017 6.18085 18.6017 8.02767 17.5277 9.16676L16.2314 10.5418M16.8778 9.85425L10.72 16.3855C9.10912 18.0941 6.49732 18.0941 4.88641 16.3855C3.27549 14.6769 3.27549 11.9066 4.88641 10.198L11.0441 3.66675"
-                                                                                stroke="white" stroke-width="1.6"
-                                                                                stroke-linecap="round"
-                                                                                stroke-linejoin="round" />
-                                                                            <path
-                                                                                d="M14.9332 7.79175L8.77551 14.323C8.23854 14.8925 7.36794 14.8926 6.83097 14.323C6.294 13.7535 6.294 12.83 6.83097 12.2605L12.9887 5.72925M12.3423 6.41676L13.6387 5.04176C14.7126 3.90267 16.4538 3.90267 17.5277 5.04176C18.6017 6.18085 18.6017 8.02767 17.5277 9.16676L16.2314 10.5418M16.8778 9.85425L10.72 16.3855C9.10912 18.0941 6.49732 18.0941 4.88641 16.3855C3.27549 14.6769 3.27549 11.9066 4.88641 10.198L11.0441 3.66675"
-                                                                                stroke="white" stroke-opacity="0.2"
-                                                                                stroke-width="1.6"
-                                                                                stroke-linecap="round"
-                                                                                stroke-linejoin="round" />
-                                                                            <path
-                                                                                d="M14.9332 7.79175L8.77551 14.323C8.23854 14.8925 7.36794 14.8926 6.83097 14.323C6.294 13.7535 6.294 12.83 6.83097 12.2605L12.9887 5.72925M12.3423 6.41676L13.6387 5.04176C14.7126 3.90267 16.4538 3.90267 17.5277 5.04176C18.6017 6.18085 18.6017 8.02767 17.5277 9.16676L16.2314 10.5418M16.8778 9.85425L10.72 16.3855C9.10912 18.0941 6.49732 18.0941 4.88641 16.3855C3.27549 14.6769 3.27549 11.9066 4.88641 10.198L11.0441 3.66675"
-                                                                                stroke="white" stroke-opacity="0.2"
-                                                                                stroke-width="1.6"
-                                                                                stroke-linecap="round"
-                                                                                stroke-linejoin="round" />
-                                                                        </g>
-                                                                    </g>
-                                                                </svg>
-                                                                <span
-                                                                    class="w-full max-w-64">{{ $message->file_original_name }}</span>
-                                                            </a>
-                                                        @endif
-                                                    </span>
-                                                </div>
-                                            @endif
-                                            <div class="justify-start items-center inline-flex">
-                                                <h3 class="text-gray-500 text-xs font-normal leading-4 py-1">
-                                                    <strong>{{ $message->formatted_date }}</strong>
-                                                    {{ $message->created_at->format('h:i A') }}
-                                                </h3>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <img src="https://pagedone.io/asset/uploads/1704091591.png" alt="Hailey image"
-                                        class="w-10 h-11">
+                                    <h6 class="text-xs text-gray-500 mt-1 {{  $isSender ? 'ml-auto' : 'mr-auto'}}">
+                                        {{ $timestamp }}
+                                    </h6>
                                 </div>
-                            @endif
+                            </div>
                         </div>
+                    </div>
+
                     @endforeach
                 </div>
 
@@ -364,6 +268,9 @@
             typingIndicator.classList.add('hidden');
         }, 2000);
         }
+    }).listen('MessageSentEvent', (event) => {
+        const audio = new Audio('{{ asset('storage/sounds/notification-sound.mp3') }}');
+        audio.play();
     });
 
 

@@ -80,6 +80,12 @@
             } else {
                 unreadElementCount.classList.remove('bg-red-600', 'text-white', 'px-2', 'py-1', 'rounded-full', 'text-xs');
             }
+
+            //play notificaiton audio
+            if(event.unreadMessageCount > 0 ){
+                const audio = new Audio('{{ asset('storage/sounds/notification-sound.mp3') }}');
+                audio.play();
+            }
         }
 });
 </script>

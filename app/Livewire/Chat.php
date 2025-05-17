@@ -121,6 +121,7 @@ class Chat extends Component
     public function saveMessage(){
 
        if($this->file){
+
             $fileName = $this->file->hashName();
             $fileOriginalName = $this->file->getClientOriginalName();
             $forlderPath = $this->file->store('chat_files', 'public');
