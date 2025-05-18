@@ -26,4 +26,16 @@
             </div>
         </div>
     </div>
+
+
+    <form action="{{ route('users.addProfilePicture', ['userId' => auth()->user()->id]) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <div class="mb-4">
+            <label for="profilePhoto" class="block font-medium">Upload profile picture</label>
+            <input type="file" name="profilePhoto" id="profilePhoto" class="block mt-1">
+        </div>
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Upload</button>
+    </form>
+
+
 </x-app-layout>

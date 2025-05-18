@@ -25,6 +25,7 @@ class Message extends Model
         return $this->belongsTo(User::class,'receiver_id', 'id' );
     }
 
+
     /**
      * override created_at time
      */

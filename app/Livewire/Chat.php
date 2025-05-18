@@ -83,7 +83,7 @@ class Chat extends Component
 
     #[On('echo-private:chat-channel.{senderId}.{receiverId},MessageSentEvent')]
     public function listenMessage($event){
-        $newMessage =  Message::find($event['message']['id'])->load('sender:id,name', 'receiver:id,name');
+        $newMessage =  Message::find($event['message']['id'])->load('sender:id,name,profile_photo', 'receiver:id,name');
         $this->messages[] = $newMessage;
 
          #dispatching event to scroll to the bottom
@@ -94,7 +94,7 @@ class Chat extends Component
     //    return  Message::where('sender_id', $this->senderId)
     //     ->where('receiver_id', $this->receiverId)->get();
 
-         return Message::with('sender:id,name', 'receiver:id,name')
+         return Message::with('sender:id,name,profile_photo', 'receiver:id,name',)
         ->where(function($query){
             $query->where('sender_id', $this->senderId)
             ->where('receiver_id', $this->receiverId);

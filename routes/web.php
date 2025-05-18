@@ -20,3 +20,7 @@ Route::view('profile', 'profile')
     ->name('profile');
 
 require __DIR__.'/auth.php';
+
+
+Route::post('/users/{userId}/add-profile-picture', [UserController::class, 'AddProfilePicture'])
+    ->name('users.addProfilePicture');

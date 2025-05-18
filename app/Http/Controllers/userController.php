@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
 
 class userController extends Controller
 {
@@ -20,6 +22,25 @@ class userController extends Controller
     public function userChat(User $userId){
         return view ('user-chat', data: compact('userId'));
     }
+
+
+    public function AddProfilePicture(User $userId)
+    {
+        if (request()->hasFile('profilePhoto')) {
+            // Delete old photo if it exists
+            if ($userId->profile_photo && Storage::disk('public')->exists($userId->profile_photo)) {
+                Storage::disk('public')->delete($userId->profile_photo);
+            }
+
+            // Store new photo
+            $path = request()->file('profilePhoto')->store('profile_photos', 'public');
+            $userId->profile_photo = $path;
+            $userId->save();
+        }
+
+        return back()->with('success', 'Profile picture updated!');
+    }
+
 
     /**
      * Show the form for creating a new resource.

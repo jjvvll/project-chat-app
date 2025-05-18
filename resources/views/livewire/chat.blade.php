@@ -85,8 +85,19 @@
                         <div class="flex {{ $isSender ? 'justify-end' : 'justify-start' }} pb-3">
                             <div class="flex gap-2.5 max-w-[50%]">
                                 @unless($isSender)
-                                    <img src="https://pagedone.io/asset/uploads/1710412177.png" alt="Profile"
-                                        class="w-10 h-11 rounded-full">
+                                    {{-- <img src="{{ asset('storage/' . $message->sender->profile_photo) }}" alt="Profile"
+                                        class="w-10 h-11 rounded-full"> --}}
+                                        {{-- the current user is the receiver, which is why we're displaying photos of the sender only --}}
+                                        @if($message->sender->profile_photo)
+                                            <img src="{{ asset('storage/' . $message->sender->profile_photo) }}"
+                                                alt="{{ $message->sender->name }}"
+                                                class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
+                                        @else
+                                            <!-- Fallback avatar with initials -->
+                                            <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm">
+                                                {{ strtoupper(substr($message->sender->name, 0, 1)) }}
+                                            </div>
+                                        @endif
                                 @endunless
 
                                 <div class="grid gap-1">
@@ -104,24 +115,35 @@
                                     @if ($message->file_name)
                                         @if ($isImage)
                                             <div x-data="{ open: false }">
-                                                <img @click="open = true"
+                                                <img
+                                                    @click="open = true"
                                                     src="{{ asset('storage/'.$message->folder_path) }}"
                                                     alt="Image"
-                                                    class="w-30 h-20 rounded-lg object-cover border cursor-pointer hover:opacity-90 mt-2">
+                                                    class="w-30 h-20 rounded-lg object-cover border cursor-pointer hover:opacity-90 mt-2"
+                                                >
 
-                                                <div x-show="open" @click.away="open = false"
-                                                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
+                                                <div
+                                                    x-show="open"
+                                                    @click.away="open = false"
+                                                    x-cloak
+                                                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
+                                                >
                                                     <div class="relative max-w-4xl max-h-[90vh]">
-                                                        <img src="{{ asset('storage/'.$message->folder_path) }}"
+                                                        <img
+                                                            src="{{ asset('storage/'.$message->folder_path) }}"
                                                             alt="Full view"
-                                                            class="max-w-full max-h-[80vh] object-contain">
-                                                        <button @click="open = false"
-                                                                class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300">
+                                                            class="max-w-full max-h-[80vh] object-contain"
+                                                        >
+                                                        <button
+                                                            @click="open = false"
+                                                            class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300"
+                                                        >
                                                             ✕
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
+
                                         @else
                                             <a href="{{ asset('storage/' . $message->folder_path) }}"
                                                 download
