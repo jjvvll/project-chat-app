@@ -68,6 +68,16 @@
                 class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-15 overflow-y-auto h-[calc(100vh-12rem)] scroll-smooth">
 
                 <div class="w-full px-5 py-8 grow" id="message-list">
+                   <div class="flex justify-center">
+                        @if (!$noMoreMessages)
+                            <button wire:click="loadMoreMessages"
+                                    class="text-sm px-3 py-1 mb-2 rounded bg-gray-200 hover:bg-gray-300">
+                                Load More
+                            </button>
+                        @else
+                            <p class="text-sm text-gray-500 mb-2">You've reached the end</p>
+                        @endif
+                    </div>
                     @foreach ($messages as $index => $message)
 
                         {{-- Message wrapper --}}

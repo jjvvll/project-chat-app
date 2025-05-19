@@ -18,13 +18,15 @@ class Chat extends Component
     use WithFileUploads;
 
     public $userId;
-    public $message; //whatever we type in that input field. it will be capture by this variable
+    public $message; //whatever we type in that input field. it will be captured by this variable
     public $senderId;
     public $receiverId;
 
     public $messages;
     public $search;
     public $file;
+    public $lastMessageTimestamp;
+    public $noMoreMessages;
 
     public function mount($userId){
         $this->dispatch('messages-updated');
@@ -51,6 +53,10 @@ class Chat extends Component
     public function sendMessage(){
 
         $sentMessage = $this->saveMessage();
+
+        if (empty( $sentMessage)) {
+            return; // Do nothing if the message is empty
+        }
 
         #assuigning latest message
         $this->messages[] = $sentMessage;
@@ -87,22 +93,66 @@ class Chat extends Component
         $this->messages[] = $newMessage;
 
          #dispatching event to scroll to the bottom
-         $this->dispatch('messages-updated');
+         $this->dispatch(event: 'messages-updated');
     }
 
     public function getMessages(){
     //    return  Message::where('sender_id', $this->senderId)
-    //     ->where('receiver_id', $this->receiverId)->get();
+        //     ->where('receiver_id', $this->receiverId)->get();
 
-         return Message::with('sender:id,name,profile_photo', 'receiver:id,name',)
-        ->where(function($query){
-            $query->where('sender_id', $this->senderId)
-            ->where('receiver_id', $this->receiverId);
-        })  ->orWhere(function($query){
-            $query->where('sender_id', $this->receiverId)
-            ->where('receiver_id', $this->senderId);
-        })->get();
+       $fetchedMessages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+            ->where(function ($query) {
+                $query->where('sender_id', $this->senderId)
+                    ->where('receiver_id', $this->receiverId);
+            })
+            ->orWhere(function ($query) {
+                $query->where('sender_id', $this->receiverId)
+                    ->where('receiver_id', $this->senderId);
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(30)
+            ->get();
+
+        // Store timestamp before reversing
+        $this->lastMessageTimestamp = $fetchedMessages->last()->created_at ?? now();
+
+        // Reverse collection for display
+        $fetchedMessages = $fetchedMessages->reverse()->values();
+
+        return $fetchedMessages;
     }
+
+    public function loadMoreMessages()
+    {
+         $newMessages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+        ->where(function ($query) {
+            $query->where(function ($q) {
+                $q->where('sender_id', $this->senderId)
+                ->where('receiver_id', $this->receiverId);
+            })->orWhere(function ($q) {
+                $q->where('sender_id', $this->receiverId)
+                ->where('receiver_id', $this->senderId);
+            });
+        })
+        ->where('created_at', '<', $this->lastMessageTimestamp)
+        ->orderBy('created_at', 'desc')
+        ->limit(30)
+        ->get();
+
+
+        if ($newMessages->isNotEmpty()) {
+            // Update the last message timestamp
+            $this->lastMessageTimestamp = $newMessages->last()->created_at;
+
+            // Merge new messages with existing ones (prepend to maintain chronological order)
+            $this->messages = $newMessages->reverse()
+                ->merge($this->messages)
+                ->values();
+        }else{
+            $this->noMoreMessages = true; // Set flag when no more messages
+        }
+    }
+
 
     public function userTyping(){
 
@@ -119,6 +169,10 @@ class Chat extends Component
 
     // function for sending message
     public function saveMessage(){
+
+        if (empty($this->message)) {
+            return; // Do nothing if the message is empty
+        }
 
        if($this->file){
 
