@@ -80,6 +80,18 @@
                     </div>
                     @foreach ($messages as $index => $message)
 
+                      @if ($message->relationLoaded('sender'))
+                            <p>Sender is eager loaded: {{ $message->sender->name }}</p>
+                        @else
+                            <p>Sender is NOT eager loaded</p>
+                        @endif
+
+                        @if ($message->relationLoaded('receiver'))
+                            <p>Receiver is eager loaded: {{ $message->receiver->name }}</p>
+                        @else
+                            <p>Receiver is NOT eager loaded</p>
+                        @endif
+
                         {{-- Message wrapper --}}
                 <div id="message-{{ $index }}">
                         @php

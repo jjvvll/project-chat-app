@@ -58,8 +58,10 @@ class Chat extends Component
             return; // Do nothing if the message is empty
         }
 
+        // $this->messages =  $this->getMessages();
+
         #assuigning latest message
-        $this->messages[] = $sentMessage;
+        $this->messages = $this->messages->push($sentMessage);
         // dd($this->receiverId. "----".$sentMessage->sender_id );
 
         #broascast the message
@@ -89,8 +91,13 @@ class Chat extends Component
 
     #[On('echo-private:chat-channel.{senderId}.{receiverId},MessageSentEvent')]
     public function listenMessage($event){
-        $newMessage =  Message::find($event['message']['id'])->load('sender:id,name,profile_photo', 'receiver:id,name');
-        $this->messages[] = $newMessage;
+        $newMessage = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+                    ->find($event['message']['id']);
+
+
+        $this->messages = $this->messages->push($newMessage);
+
+        // $this->messages =  $this->getMessages();
 
          #dispatching event to scroll to the bottom
          $this->dispatch(event: 'messages-updated');
