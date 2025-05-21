@@ -80,7 +80,7 @@
                     </div>
                     @foreach ($messages as $index => $message)
 
-                      @if ($message->relationLoaded('sender'))
+                      {{-- @if ($message->relationLoaded('sender'))
                             <p>Sender is eager loaded: {{ $message->sender->name }}</p>
                         @else
                             <p>Sender is NOT eager loaded</p>
@@ -90,7 +90,7 @@
                             <p>Receiver is eager loaded: {{ $message->receiver->name }}</p>
                         @else
                             <p>Receiver is NOT eager loaded</p>
-                        @endif
+                        @endif --}}
 
                         {{-- Message wrapper --}}
                 <div id="message-{{ $index }}">
@@ -216,10 +216,12 @@
                             </svg>
 
                             {{-- Message Input --}}
-                            <input autocomplete="off" id="message-input" wire:model="message"
-                                wire:keydown="userTyping"
-                                class="grow shrink basis-0 text-black text-xs font-medium rounded leading-4 focus:outline-none"
-                                placeholder="Type here...">
+                           <input autocomplete="off"
+                            id="message-input"
+                            wire:model="message"
+                            class="grow shrink basis-0 text-black text-xs font-medium rounded leading-4 focus:outline-none"
+                            placeholder="Type here...">
+
                         </div>
 
                         <div class="flex items-center gap-2">
@@ -294,43 +296,54 @@
 <script type="module">
     let typingTimeout = null;
     let chatContainer = document.getElementById('chat-container');
+    const messageInput = document.getElementById('message-input');
+    const typingIndicator = document.getElementById('typing-indicator');
 
+    // Listen to broadcasted Laravel events
     window.Echo.private(`chat-channel.{{ $senderId }}.{{ $receiverId }}`)
-    .listen('UserTyping', (event) => {
-        const messageInput = document.getElementById('message-input');
-        const typingIndicator = document.getElementById('typing-indicator');
+        .listen('MessageSentEvent', (event) => {
+        console.log(event);
+            const audio = new Audio('{{ asset('storage/sounds/notification-sound.mp3') }}');
+            audio.play();
+        });
 
-        if (messageInput && typingIndicator) {
-        // Show the GIF
-        typingIndicator.classList.remove('hidden');
+    // Listen to whispers from the other client
+    window.Echo.private(`chat-channel.{{ $senderId }}.{{ $receiverId }}`)
+        .listenForWhisper('typing', (event) => {
+            if (typingIndicator) {
+                typingIndicator.classList.remove('hidden');
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    typingIndicator.classList.add('hidden');
+                }, 2000);
+            }
+        });
 
-        // Clear previous timeout (if any)
-        clearTimeout(typingTimeout);
+    // Emit whisper on input
+    if (messageInput) {
+        messageInput.addEventListener('input', () => {
+            window.Echo.private(`chat-channel.{{ $receiverId }}.{{ $senderId }}`)
+                .whisper('typing', {
+                    senderId: {{ $senderId }},
+                    receiverId: {{ $receiverId }}
+                });
+        });
+    }
 
-        // Hide after 2 seconds of inactivity
-        typingTimeout = setTimeout(() => {
-            typingIndicator.classList.add('hidden');
-        }, 2000);
-        }
-    }).listen('MessageSentEvent', (event) => {
-        const audio = new Audio('{{ asset('storage/sounds/notification-sound.mp3') }}');
-        audio.play();
-    });
-
-
-    Livewire.on('messages-updated', () =>{
-       setTimeout(()=>{
+    // Auto-scroll logic
+    Livewire.on('messages-updated', () => {
+        setTimeout(() => {
             scrollToLatestMessage()
-       }, 50);
+        }, 50);
     });
 
-    window.onload = () =>{
+    window.onload = () => {
         scrollToLatestMessage();
     }
 
     function scrollToLatestMessage() {
-    if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
-}
 </script>

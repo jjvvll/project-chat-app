@@ -8,7 +8,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('chat-channel.{receiverId}.{senderId}', function (User $user, $receiverId, $senderId) {
-    return (int) $user->id === (int) $receiverId;
+    return  (int) $user->id === (int) $senderId || (int) $user->id === (int) $receiverId;
 });
 
 Broadcast::channel('unread-channel.{reiceverId}', function(User $user, $receiverId){

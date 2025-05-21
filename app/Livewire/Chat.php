@@ -10,6 +10,7 @@ use App\Events\UnreadMessage;
 use App\Events\UserTyping;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Cache;
 
 
 
@@ -59,10 +60,11 @@ class Chat extends Component
         }
 
         // $this->messages =  $this->getMessages();
+        /// Load relationships before pushing (to prevent lazy-loading)
+        $this->messages->load('sender', 'receiver'); // Adjust to your needs
 
-        #assuigning latest message
+        // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($sentMessage);
-        // dd($this->receiverId. "----".$sentMessage->sender_id );
 
         #broascast the message
         broadcast(new MessageSentEvent($sentMessage));
@@ -91,11 +93,16 @@ class Chat extends Component
 
     #[On('echo-private:chat-channel.{senderId}.{receiverId},MessageSentEvent')]
     public function listenMessage($event){
-        $newMessage = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+        // 1. Eager load the new message with relationships
+        $newMessage = Message::with('sender:id,name,profile_photo', 'receiver:id')
                     ->find($event['message']['id']);
 
+         // Load relationships before pushing (to prevent lazy-loading)
+        $this->messages->load('sender', 'receiver'); // Adjust to your needs
 
+        // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($newMessage);
+
 
         // $this->messages =  $this->getMessages();
 
@@ -131,6 +138,9 @@ class Chat extends Component
 
     public function loadMoreMessages()
     {
+          // Load relationships before pushing (to prevent lazy-loading)
+        $this->messages->load('sender', 'receiver'); // Adjust to your needs
+
          $newMessages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
         ->where(function ($query) {
             $query->where(function ($q) {
@@ -161,11 +171,11 @@ class Chat extends Component
     }
 
 
-    public function userTyping(){
+    // public function userTyping(){
 
-        broadcast(new UserTyping($this->senderId, $this->receiverId))->toOthers();
-        //toothers make sure that the event is broadcasted to everybody else except the source
-    }
+    //     broadcast(new UserTyping($this->senderId, $this->receiverId))->toOthers();
+    //     //toothers make sure that the event is broadcasted to everybody else except the source
+    // }
 
     public function markMessagesAsRead(){
         Message::where('sender_id', $this->receiverId)

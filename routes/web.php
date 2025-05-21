@@ -24,3 +24,12 @@ require __DIR__.'/auth.php';
 
 Route::post('/users/{userId}/add-profile-picture', [UserController::class, 'AddProfilePicture'])
     ->name('users.addProfilePicture');
+
+
+use App\Events\UserTyping;
+use Illuminate\Http\Request;
+
+Route::post('/broadcast-typing', function (Request $request) {
+    broadcast(new UserTyping($request->sender_id, $request->receiver_id))->toOthers();
+    return response()->noContent();
+});
