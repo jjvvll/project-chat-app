@@ -24,11 +24,16 @@ class Chat extends Component
     public $receiverId;
 
     public $messages;
-    public $search;
+
     public $file;
     public $lastMessageTimestamp;
     public $noMoreMessages;
 
+     public $search         = '';
+    public $matchedIndexes = [];
+    public $currentMatch   = 0;
+
+    public $searhCount ;
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -47,6 +52,8 @@ class Chat extends Component
 
     public function render()
     {
+        $this->messages->loadMissing('sender', 'receiver');
+
         $this->markMessagesAsRead();
         return view('livewire.chat');
     }
@@ -208,5 +215,133 @@ class Chat extends Component
         'folder_path' => $forlderPath ?? null,
         'file_type' =>  $fileType ?? null,
         'is_read' => false]);
+    }
+
+     public function highlightText($text, $search)
+    {
+        // Escape the search term to safely insert into the regex.
+        $escaped = preg_quote($search, '/');
+        // Use preg_replace to wrap matched terms in a <mark> tag.
+        return preg_replace('/(' . $escaped . ')/i', '<mark>$1</mark>', e($text));
+    }
+
+    public function loadAllMatchingMessages()
+    {
+           $this->noMoreMessages = false; //the purpose of this is to reset load new messages button whenever this button is used
+
+        if (empty($this->search)) return;
+
+        // Step 1: Find the oldest matching message
+        $oldestMatch = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+        ->where(column: function ($query) {
+                $query->where('sender_id', $this->senderId)
+                    ->where('receiver_id', $this->receiverId)
+                    ->orWhere(function ($q) {
+                        $q->where('sender_id', $this->receiverId)
+                            ->where('receiver_id', $this->senderId);
+                    });
+            })
+            ->where('message', 'like', '%' . $this->search . '%')
+            ->orderBy('created_at') // oldest first
+            ->first();
+
+        if ($oldestMatch) {
+            // Step 2: Get messages from that point forward
+            $this->messages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+        ->where(function ($query) {
+                    $query->where('sender_id', $this->senderId)
+                        ->where('receiver_id', $this->receiverId)
+                        ->orWhere(function ($q) {
+                            $q->where('sender_id', $this->receiverId)
+                                ->where('receiver_id', $this->senderId);
+                        });
+                })
+                ->where('created_at', '>=', $oldestMatch->created_at)
+                ->orderBy('created_at')
+                ->get();
+
+            // Step 3: Re-run the search to highlight matches
+            $this->updatedSearch();
+
+            $this->lastMessageTimestamp = $oldestMatch->created_at;
+        }
+    }
+
+    public function updatedSearch()
+    {
+        $this->messages->loadMissing('sender', 'receiver');
+
+        # Reset matches on new search
+        $this->matchedIndexes = [];
+
+        if (! empty($this->search)) {
+            foreach ($this->messages as $index => $message) {
+                if (stripos($message->message, $this->search) !== false) {
+                    $this->matchedIndexes[] = $index;
+                }
+            }
+        }
+
+        $this->searhCount = count($this->matchedIndexes);
+
+        // Reset to first match
+        $this->currentMatch = count($this->matchedIndexes) > 0 ? 0 : -1;
+
+        // Scroll to the first match
+        if ($this->currentMatch !== -1) {
+            $this->scrollToMatch();
+        }
+    }
+
+    /**
+     * Function: nextMatch
+     */
+    public function nextMatch()
+    {
+
+        if (count($this->matchedIndexes) > 0) {
+            $this->currentMatch = ($this->currentMatch + 1) % count($this->matchedIndexes);
+            $this->scrollToMatch();
+        }
+    }
+
+    /**
+     * Function: prevMatch
+     */
+    public function prevMatch()
+    {
+
+        if (count($this->matchedIndexes) > 0) {
+            $this->currentMatch = ($this->currentMatch - 1 + count($this->matchedIndexes)) % count($this->matchedIndexes);
+            $this->scrollToMatch();
+        }
+    }
+
+    /**
+     * Function: scrollToMatch
+     */
+    public function scrollToMatch()
+    {
+
+        $index = $this->matchedIndexes[$this->currentMatch] ?? null;
+
+        if (! is_null($index)) {
+            $this->dispatch('scroll-to-message', index: $index);
+        }
+    }
+
+    /**
+     * Function: resetSearch
+     */
+    public function resetSearch()
+    {
+        $this->searhCount = '';
+
+        $this->search         = '';
+        $this->matchedIndexes = [];
+        $this->currentMatch   = -1;
+
+        # Scroll to latest message
+        $this->dispatch('messages-updated');
     }
 }

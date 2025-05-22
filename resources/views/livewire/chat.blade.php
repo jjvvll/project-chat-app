@@ -57,6 +57,13 @@
                         </div>
                     @endif
                 </div>
+                        <div>
+                             <button wire:click="loadAllMatchingMessages"
+                                class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                Load All Matching Messages
+                            </button>
+                            <p>Results: {{$searhCount}}</p>
+                        </div>
             </div>
         </div>
     </div>
@@ -346,4 +353,18 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     }
+
+            // Scroll to Message
+        Livewire.on('scroll-to-message', (event) => {
+            const messageElement = document.getElementById(`message-${event.index}`);
+             if (messageElement) {
+                console.log('Found message element:', messageElement);
+                messageElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            } else {
+                console.warn(`No element found with id message-${event.index}`);
+            }
+        });
 </script>
