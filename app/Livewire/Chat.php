@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Message;
 use App\Events\MessageSentEvent;
 use App\Events\UnreadMessage;
+use App\Events\MessageReaction;
 use App\Events\UserTyping;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
@@ -62,19 +63,19 @@ class Chat extends Component
 
         $sentMessage = $this->saveMessage();
 
-        if (empty( $sentMessage)) {
+        if (empty($this->message) && empty($this->file)) {
             return; // Do nothing if the message is empty
         }
 
         // $this->messages =  $this->getMessages();
         /// Load relationships before pushing (to prevent lazy-loading)
-        $this->messages->load('sender', 'receiver'); // Adjust to your needs
+        $this->messages->loadMissing('sender', 'receiver');// Adjust to your needs
 
         // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($sentMessage);
 
         #broascast the message
-        broadcast(new MessageSentEvent($sentMessage));
+        broadcast(event: new MessageSentEvent($sentMessage));
 
         $unreadMessageCount = $this->getUnreadMessagesCount();
 
@@ -100,12 +101,13 @@ class Chat extends Component
 
     #[On('echo-private:chat-channel.{senderId}.{receiverId},MessageSentEvent')]
     public function listenMessage($event){
+
         // 1. Eager load the new message with relationships
         $newMessage = Message::with('sender:id,name,profile_photo', 'receiver:id')
                     ->find($event['message']['id']);
 
          // Load relationships before pushing (to prevent lazy-loading)
-        $this->messages->load('sender', 'receiver'); // Adjust to your needs
+        $this->messages->loadMissing('sender', 'receiver'); // Adjust to your needs
 
         // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($newMessage);
@@ -146,7 +148,7 @@ class Chat extends Component
     public function loadMoreMessages()
     {
           // Load relationships before pushing (to prevent lazy-loading)
-        $this->messages->load('sender', 'receiver'); // Adjust to your needs
+        $this->messages->loadMissing('sender', 'receiver'); // Adjust to your needs
 
          $newMessages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
         ->where(function ($query) {
@@ -194,7 +196,7 @@ class Chat extends Component
     // function for sending message
     public function saveMessage(){
 
-        if (empty($this->message)) {
+        if (empty($this->message) && empty($this->file)) {
             return; // Do nothing if the message is empty
         }
 
@@ -343,5 +345,42 @@ class Chat extends Component
 
         # Scroll to latest message
         $this->dispatch('messages-updated');
+    }
+
+  public function addReaction($emoji, $messageId)
+    {
+        $message = Message::findOrFail($messageId);
+
+        // Save the emoji to the 'reaction' column
+        $message->reaction = $emoji;
+        $message->save();
+
+        $updatedMessage = Message::with(['sender', 'receiver'])->find($messageId);
+
+          // Update the message in the local Livewire collection
+        if ($this->messages instanceof \Illuminate\Support\Collection) {
+            // If it's a Collection
+            $this->messages = $this->messages->map(function ($msg) use ($updatedMessage) {
+                return $msg->id === $updatedMessage->id ? $updatedMessage : $msg;
+            });
+        } else {
+            // If it's an array
+            foreach ($this->messages as $i => $msg) {
+                if ($msg['id'] === $updatedMessage->id) {
+                    $this->messages[$i] = $updatedMessage   ;
+                    break;
+                }
+            }
+        }
+
+        broadcast(event: new MessageReaction($message));
+
+    }
+
+
+    #[On('echo-private:reaction-channel.{receiverId}.{senderId},MessageReaction')]
+    public function listenMessageReaction($event){
+    //    $this->dispatch('reaction-added', messageId: $event['message']['id']);
+
     }
 }

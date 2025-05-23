@@ -11,6 +11,10 @@ Broadcast::channel('chat-channel.{receiverId}.{senderId}', function (User $user,
     return  (int) $user->id === (int) $senderId || (int) $user->id === (int) $receiverId;
 });
 
+Broadcast::channel('reaction-channel.{receiverId}.{senderId}', function (User $user, $receiverId, $senderId) {
+    return  (int) $user->id === (int) $senderId;
+});
+
 Broadcast::channel('unread-channel.{reiceverId}', function(User $user, $receiverId){
      return (int) $user->id === (int) $receiverId;
 });

@@ -24,18 +24,21 @@
                     <livewire:profile.delete-user-form />
                 </div>
             </div>
+            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+                <form action="{{ route('users.addProfilePicture', ['userId' => auth()->user()->id]) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="mb-4">
+                        <label for="profilePhoto" class="block font-medium">Upload profile picture</label>
+                        <input type="file" name="profilePhoto" id="profilePhoto" class="block mt-1">
+                    </div>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Upload</button>
+                </form>
+            </div>
         </div>
     </div>
 
 
-    <form action="{{ route('users.addProfilePicture', ['userId' => auth()->user()->id]) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        <div class="mb-4">
-            <label for="profilePhoto" class="block font-medium">Upload profile picture</label>
-            <input type="file" name="profilePhoto" id="profilePhoto" class="block mt-1">
-        </div>
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Upload</button>
-    </form>
+
 
 
 </x-app-layout>

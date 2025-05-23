@@ -15,6 +15,7 @@ class Message extends Model
         'folder_path',
         'file_type',
         'is_read',
+        'reaction',
     ];
 
     public function sender()  {

@@ -86,8 +86,8 @@
                         @endif
                     </div>
                     @foreach ($messages as $index => $message)
-
-                      {{-- @if ($message->relationLoaded('sender'))
+{{--
+                      @if ($message->relationLoaded('sender'))
                             <p>Sender is eager loaded: {{ $message->sender->name }}</p>
                         @else
                             <p>Sender is NOT eager loaded</p>
@@ -100,6 +100,7 @@
                         @endif --}}
 
                         {{-- Message wrapper --}}
+
                 <div id="message-{{ $index }}">
                         @php
                             $isSender = $message->sender->id === auth()->user()->id;
@@ -129,7 +130,7 @@
                                         @endif
                                 @endunless
 
-                                <div class="grid gap-1">
+                                <div class="grid gap-1 relative group items-center">
                                     <h5 class="text-sm font-semibold {{ $isSender ? 'text-right' : '' }}">
                                         {{ $isSender ? 'You' : $message->sender->name }}
                                     </h5>
@@ -174,14 +175,89 @@
                                             </div>
 
                                         @else
-                                            <a href="{{ asset('storage/' . $message->folder_path) }}"
-                                                download
-                                                class="flex items-center gap-2 mt-2 px-3 py-2 rounded text-sm break-words
-                                                {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-black' }}">
-                                                📎 {{ $message->file_original_name }}
-                                            </a>
+
+                                                <a href="{{ asset('storage/' . $message->folder_path) }}"
+                                                    download
+                                                    class="flex items-center gap-2 mt-2 px-3 py-2 rounded text-sm break-words
+                                                    {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-black' }}">
+                                                    📎 {{ $message->file_original_name }}
+                                                </a>
+
                                         @endif
                                     @endif
+
+
+                                        <div class="absolute -right-8 text-xs text-gray-500 {{ $isSender ? '-left-8' : '-right-8' }}"
+                                            x-data="{ showReactions: false }">
+
+                                            @if (!$isSender)
+                                                <button
+                                                @click="showReactions = true"
+                                                class="flex items-center justify-center w-6 h-6"
+                                                 id="button-{{ $message->id }}"
+                                            >
+                                                @if (!empty($message->reaction))
+                                                    <span class="text-lg bg-gray-100 rounded-full px-2.5 py-1.5 inline-flex items-center justify-center min-w-[2.5rem]">
+                                                        {{ $message->reaction }}
+                                                    </span>
+                                                @else
+                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity  hover:text-indigo-600" >
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                                                    </svg>
+                                                @endif
+
+                                                </button>
+                                            @else
+                                                <div class="flex items-center justify-center w-6 h-6">
+                                                     @if (!empty($message->reaction))
+                                                    <span class="text-lg bg-gray-100 rounded-full px-2.5 py-1.5 inline-flex items-center justify-center min-w-[2.5rem]">
+                                                        {{ $message->reaction }}
+                                                    </span>
+                                                  @endif
+                                                </div>
+                                            @endif
+
+
+                                            <!-- Reaction Picker Popup -->
+                                            <div
+                                                x-show="showReactions"
+                                                @click.away="showReactions = false"
+                                                x-transition:enter="transition ease-out duration-100"
+                                                x-transition:enter-start="opacity-0 scale-95"
+                                                x-transition:enter-end="opacity-100 scale-100"
+                                                x-transition:leave="transition ease-in duration-75"
+                                                x-transition:leave-start="opacity-100 scale-100"
+                                                x-transition:leave-end="opacity-0 scale-95"
+                                                class="absolute bottom-full {{ $isSender ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left' }} mb-2 bg-white shadow-xl rounded-full p-2.5 flex gap-2 z-50 border border-gray-200 transform scale-110">
+                                                <!-- Reaction options -->
+                                                <button @click="$wire.addReaction('❤️', {{ $message->id }}); showReactions = false"
+                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
+                                                    ❤️
+                                                </button>
+                                                <button @click="$wire.addReaction('😂', {{ $message->id }}); showReactions = false"
+                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
+                                                    😂
+                                                </button>
+                                                <button @click="$wire.addReaction('😮', {{ $message->id }}); showReactions = false"
+                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
+                                                    😮
+                                                </button>
+                                                <button @click="$wire.addReaction('😢', {{ $message->id }}); showReactions = false"
+                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
+                                                    😢
+                                                </button>
+                                                <button @click="$wire.addReaction('👍', {{ $message->id }}); showReactions = false"
+                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
+                                                    👍
+                                                </button>
+                                                <button @click="$wire.addReaction('👎', {{ $message->id }}); showReactions = false"
+                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
+                                                    👎
+                                                </button>
+                                            </div>
+                                        </div>
+
+
 
                                     <h6 class="text-xs text-gray-500 mt-1 {{  $isSender ? 'ml-auto' : 'mr-auto'}}">
                                         {{ $timestamp }}
@@ -367,4 +443,9 @@
                 console.warn(`No element found with id message-${event.index}`);
             }
         });
+
+
+
+
+
 </script>
