@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Events\MessageSentEvent;
 use App\Events\UnreadMessage;
 use App\Events\MessageReaction;
+use App\Events\MessageDeleted;
 use App\Events\UserTyping;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
@@ -123,7 +124,7 @@ class Chat extends Component
     //    return  Message::where('sender_id', $this->senderId)
         //     ->where('receiver_id', $this->receiverId)->get();
 
-       $fetchedMessages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+       $fetchedMessages = Message::withTrashed()->with('sender:id,name,profile_photo', 'receiver:id,name')
             ->where(function ($query) {
                 $query->where('sender_id', $this->senderId)
                     ->where('receiver_id', $this->receiverId);
@@ -380,7 +381,46 @@ class Chat extends Component
 
     #[On('echo-private:reaction-channel.{receiverId}.{senderId},MessageReaction')]
     public function listenMessageReaction($event){
-    //    $this->dispatch('reaction-added', messageId: $event['message']['id']);
+    ///listen for reaction update in a message
+    }
+
+    public function deleteMessage($messageId)
+    {
+        $message = Message::findOrFail($messageId);
+
+        // Verify the user owns the message before deleting
+        if ($this->senderId === Auth::user()->id) {
+             $message->reaction = '';
+                $message->save();
+            // Soft delete the message
+             $message->delete();
+
+            $updatedMessage = Message::withTrashed()->with(['sender', 'receiver'])->find($message->id);
+
+                // Update the message in the local Livewire collection
+                if ($this->messages instanceof \Illuminate\Support\Collection) {
+                    // If it's a Collection
+                    $this->messages = $this->messages->map(function ($msg) use ($updatedMessage) {
+                        return $msg->id === $updatedMessage->id ? $updatedMessage : $msg;
+                    });
+                } else {
+                    // If it's an array
+                    foreach ($this->messages as $i => $msg) {
+                        if ($msg['id'] === $updatedMessage->id) {
+                            $this->messages[$i] = $updatedMessage   ;
+                            break;
+                        }
+                    }
+                }
+
+                broadcast(event: new MessageDeleted($updatedMessage)); //same purpose, send an event to update message bubble of the receiver
+
+        }
+    }
+
+    #[On('echo-private:deleted-channel.{senderId}.{receiverId},MessageDeleted')]
+    public function listenMessageDeleted($event){
+        //listen for deleted message update
 
     }
 }
