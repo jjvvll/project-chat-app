@@ -131,10 +131,13 @@
                                 @endunless
 
                              <x-message-actions :message="$message" :isSender="$isSender">
+
                                 <div>
                                     <h5 class="text-sm font-semibold {{ $isSender ? 'text-right' : '' }}">
                                         {{ $isSender ? 'You' : $message->sender->name }}
                                     </h5>
+                                      <x-message-reply-bubble :message="$message" :is-sender="$isSender" >
+
 
                                     @if (!$message->deleted_at)
                                         @if ($message->message)
@@ -193,7 +196,7 @@
                                                 <em class="text-sm text-gray-400">This message has been deleted</em>
                                             </div>
                                     @endif
-
+                                            </x-message-reply-bubble>
                                     </x-message-actions>
 
                                         <div class="absolute -right-8 text-xs text-gray-500 {{ $isSender ? '-left-8' : '-right-8' }}"
@@ -304,12 +307,38 @@
                                 </g>
                             </svg>
 
-                            {{-- Message Input --}}
-                           <input autocomplete="off"
-                            id="message-input"
-                            wire:model="message"
-                            class="grow shrink basis-0 text-black text-xs font-medium rounded leading-4 focus:outline-none"
-                            placeholder="Type here...">
+
+                            <div class="relative"> <!-- Container for input group -->
+                                <!-- Reply Preview (conditionally shown above input) -->
+                                @if($replyingTo)
+                                    <div class="mb-2 bg-gray-100 p-2 rounded text-sm text-gray-600">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <span class="font-medium">Replying to:</span>
+                                                <span class="italic">"{{ Str::limit($replyingTo['content'], 50) }}"</span>
+                                            </div>
+                                            <button
+                                                wire:click="$set('replyingTo', null)"
+                                                class="text-gray-400 hover:text-gray-600 text-lg"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endif
+
+
+                                <!-- Your existing input (unchanged) -->
+                                {{-- <input type="hidden" wire:model="replyingTo.id"> --}}
+
+                                <input autocomplete="off"
+                                    x-data
+                                    @keydown.enter.prevent="$wire.sendMessage()"
+                                    wire:model.defer="message"
+                                    id="message-input"
+                                    class="w-4/5 text-black text-xs font-medium rounded leading-4 focus:outline-none"
+                                    placeholder="Type here...">
+                            </div>
 
                         </div>
 
@@ -356,6 +385,7 @@
                                 <h3 class="text-white text-xs font-semibold leading-4 px-2">Send</h3>
                             </button>
                         </div>
+
 
                         {{-- File Preview --}}
                         @if ($file)
@@ -449,5 +479,10 @@
                 console.warn(`No element found with id message-${event.index}`);
             }
         });
+
+
+         Livewire.on('focus-message-input', () => {
+                document.getElementById('message-input').focus();
+            });
 
 </script>

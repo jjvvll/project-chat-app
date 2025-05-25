@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Pest\Mutate\Mutators\Visibility\FunctionPublicToProtected;
 
 class Message extends Model
 {
@@ -20,6 +21,7 @@ class Message extends Model
         'is_read',
         'reaction',
         'is_deleted',
+        'parent_id'
     ];
 
     public function sender()  {
@@ -28,6 +30,10 @@ class Message extends Model
 
     public function receiver()  {
         return $this->belongsTo(User::class,'receiver_id', 'id' );
+    }
+
+    public function parent(){
+        return $this->belongsTo(Message::class, 'parent_id', 'id')->withTrashed();
     }
 
 

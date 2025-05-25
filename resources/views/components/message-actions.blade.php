@@ -25,6 +25,7 @@
         :class="$isSender ? 'right-0' : 'left-0'"
     >
         <button
+            wire:click="startReply({{ $message->id }}, '{{ addslashes($message->message) }}')"
             @click="showActions = false"
             class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
         >

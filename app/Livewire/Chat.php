@@ -34,6 +34,8 @@ class Chat extends Component
      public $search         = '';
     public $matchedIndexes = [];
     public $currentMatch   = 0;
+    public $replyingTo = null;
+
 
     public $searhCount ;
     public function mount($userId){
@@ -62,11 +64,11 @@ class Chat extends Component
 
     public function sendMessage(){
 
-        $sentMessage = $this->saveMessage();
-
         if (empty($this->message) && empty($this->file)) {
             return; // Do nothing if the message is empty
         }
+
+        $sentMessage = $this->saveMessage();
 
         // $this->messages =  $this->getMessages();
         /// Load relationships before pushing (to prevent lazy-loading)
@@ -84,6 +86,8 @@ class Chat extends Component
 
         $this->message =null;
         $this->file =null;
+        $this->replyingTo = null;
+
 
         #dispatching event to scroll to the bottom
         $this->dispatch('messages-updated');
@@ -197,6 +201,9 @@ class Chat extends Component
     // function for sending message
     public function saveMessage(){
 
+
+        // dd($this->replyingTo);
+
         if (empty($this->message) && empty($this->file)) {
             return; // Do nothing if the message is empty
         }
@@ -217,7 +224,9 @@ class Chat extends Component
         'file_original_name' => $fileOriginalName ?? null,
         'folder_path' => $forlderPath ?? null,
         'file_type' =>  $fileType ?? null,
-        'is_read' => false]);
+        'is_read' => false,
+        'parent_id' => $this->replyingTo['id'] ?? null]);
+
     }
 
      public function highlightText($text, $search)
@@ -422,5 +431,16 @@ class Chat extends Component
     public function listenMessageDeleted($event){
         //listen for deleted message update
 
+    }
+
+
+   public function startReply($messageId, $messageContent = null)
+    {
+        $this->replyingTo = [
+            'id' => $messageId,
+            'content' => $messageContent
+        ];
+
+        $this->dispatch('focus-message-input');
     }
 }
