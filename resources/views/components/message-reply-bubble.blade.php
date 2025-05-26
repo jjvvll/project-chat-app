@@ -10,6 +10,6 @@
             </div>
         </div>
     @endif
+ {{ $slot }}
 
-     {{ $slot }}
 </div>

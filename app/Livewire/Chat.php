@@ -54,11 +54,13 @@ class Chat extends Component
 
     }
 
+
     public function render()
     {
-        $this->messages->loadMissing('sender', 'receiver');
+        $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
 
         $this->markMessagesAsRead();
+
         return view('livewire.chat');
     }
 
@@ -70,12 +72,18 @@ class Chat extends Component
 
         $sentMessage = $this->saveMessage();
 
-        // $this->messages =  $this->getMessages();
-        /// Load relationships before pushing (to prevent lazy-loading)
-        $this->messages->loadMissing('sender', 'receiver');// Adjust to your needs
-
         // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($sentMessage);
+
+         /// Load relationships before pushing (to prevent lazy-loading)
+        // $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
+
+        //    $this->messages->load([
+        //     'sender',  // Direct sender
+        //     'receiver',
+        //     'parent' => fn($q) => $q->with('sender')  // Nested sender
+        // ]);
+
 
         #broascast the message
         broadcast(event: new MessageSentEvent($sentMessage));
@@ -108,17 +116,13 @@ class Chat extends Component
     public function listenMessage($event){
 
         // 1. Eager load the new message with relationships
-        $newMessage = Message::with('sender:id,name,profile_photo', 'receiver:id')
-                    ->find($event['message']['id']);
-
-         // Load relationships before pushing (to prevent lazy-loading)
-        $this->messages->loadMissing('sender', 'receiver'); // Adjust to your needs
+        $newMessage = Message::find($event['message']['id']);
 
         // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($newMessage);
 
-
-        // $this->messages =  $this->getMessages();
+         // Load relationships before pushing (to prevent lazy-loading)
+        $this->messages->loadMissing('sender', 'receiver','parent.sender'); // Adjust to your needs
 
          #dispatching event to scroll to the bottom
          $this->dispatch(event: 'messages-updated');
@@ -128,7 +132,7 @@ class Chat extends Component
     //    return  Message::where('sender_id', $this->senderId)
         //     ->where('receiver_id', $this->receiverId)->get();
 
-       $fetchedMessages = Message::withTrashed()->with('sender:id,name,profile_photo', 'receiver:id,name')
+       $fetchedMessages = Message::withTrashed()->with('sender:id,name,profile_photo', 'receiver:id,name', 'parent.sender')
             ->where(function ($query) {
                 $query->where('sender_id', $this->senderId)
                     ->where('receiver_id', $this->receiverId);
@@ -152,11 +156,9 @@ class Chat extends Component
 
     public function loadMoreMessages()
     {
-          // Load relationships before pushing (to prevent lazy-loading)
-        $this->messages->loadMissing('sender', 'receiver'); // Adjust to your needs
 
-         $newMessages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
-        ->where(function ($query) {
+
+         $newMessages = Message::where(function ($query) {
             $query->where(function ($q) {
                 $q->where('sender_id', $this->senderId)
                 ->where('receiver_id', $this->receiverId);
@@ -179,6 +181,10 @@ class Chat extends Component
             $this->messages = $newMessages->reverse()
                 ->merge($this->messages)
                 ->values();
+
+             // Load relationships before pushing (to prevent lazy-loading)
+        $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
+
         }else{
             $this->noMoreMessages = true; // Set flag when no more messages
         }
@@ -244,7 +250,7 @@ class Chat extends Component
         if (empty($this->search)) return;
 
         // Step 1: Find the oldest matching message
-        $oldestMatch = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+        $oldestMatch = Message::with('sender:id,name,profile_photo', 'receiver:id,name', 'parent.sender')
         ->where(column: function ($query) {
                 $query->where('sender_id', $this->senderId)
                     ->where('receiver_id', $this->receiverId)
@@ -259,7 +265,7 @@ class Chat extends Component
 
         if ($oldestMatch) {
             // Step 2: Get messages from that point forward
-            $this->messages = Message::with('sender:id,name,profile_photo', 'receiver:id,name')
+            $this->messages = Message::with('sender:id,name,profile_photo', 'receiver:id,name', 'parent.sender')
         ->where(function ($query) {
                     $query->where('sender_id', $this->senderId)
                         ->where('receiver_id', $this->receiverId)
@@ -281,7 +287,7 @@ class Chat extends Component
 
     public function updatedSearch()
     {
-        $this->messages->loadMissing('sender', 'receiver');
+        $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
 
         # Reset matches on new search
         $this->matchedIndexes = [];
@@ -315,6 +321,8 @@ class Chat extends Component
             $this->currentMatch = ($this->currentMatch + 1) % count($this->matchedIndexes);
             $this->scrollToMatch();
         }
+
+           $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
     }
 
     /**
@@ -327,6 +335,7 @@ class Chat extends Component
             $this->currentMatch = ($this->currentMatch - 1 + count($this->matchedIndexes)) % count($this->matchedIndexes);
             $this->scrollToMatch();
         }
+           $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
     }
 
     /**
@@ -365,7 +374,7 @@ class Chat extends Component
         $message->reaction = $emoji;
         $message->save();
 
-        $updatedMessage = Message::with(['sender', 'receiver'])->find($messageId);
+        $updatedMessage = Message::find($messageId);
 
           // Update the message in the local Livewire collection
         if ($this->messages instanceof \Illuminate\Support\Collection) {
@@ -383,6 +392,9 @@ class Chat extends Component
             }
         }
 
+
+
+          $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
         broadcast(event: new MessageReaction($message));
 
     }
@@ -404,7 +416,7 @@ class Chat extends Component
             // Soft delete the message
              $message->delete();
 
-            $updatedMessage = Message::withTrashed()->with(['sender', 'receiver'])->find($message->id);
+            $updatedMessage = Message::withTrashed()->find($message->id);
 
                 // Update the message in the local Livewire collection
                 if ($this->messages instanceof \Illuminate\Support\Collection) {
@@ -421,6 +433,8 @@ class Chat extends Component
                         }
                     }
                 }
+
+                $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
 
                 broadcast(event: new MessageDeleted($updatedMessage)); //same purpose, send an event to update message bubble of the receiver
 

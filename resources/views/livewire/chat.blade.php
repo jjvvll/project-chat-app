@@ -35,10 +35,10 @@
                         </button>
 
                         <!-- Navigation Icons (Right) -->
-                        <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-2">
+                        <div wire:ignore.self class="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-2">
 
                             {{-- Arrow up --}}
-                            <button type="button" wire:click="prevMatch" class="text-gray-500 hover:text-gray-700">
+                            <button type="button" @click="$wire.prevMatch()"  class="text-gray-500 hover:text-gray-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -47,7 +47,7 @@
                             </button>
 
                             {{-- Arrow down --}}
-                            <button type="button" wire:click="nextMatch" class="text-gray-500 hover:text-gray-700">
+                            <button type="button"  @click="$wire.nextMatch()" class="text-gray-500 hover:text-gray-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -86,8 +86,8 @@
                         @endif
                     </div>
                     @foreach ($messages as $index => $message)
-{{--
-                      @if ($message->relationLoaded('sender'))
+
+                      {{-- @if ($message->relationLoaded('sender'))
                             <p>Sender is eager loaded: {{ $message->sender->name }}</p>
                         @else
                             <p>Sender is NOT eager loaded</p>
@@ -130,144 +130,23 @@
                                         @endif
                                 @endunless
 
-                             <x-message-actions :message="$message" :isSender="$isSender">
+                            <x-message-actions :message="$message" :isSender="$isSender">
 
                                 <div>
                                     <h5 class="text-sm font-semibold {{ $isSender ? 'text-right' : '' }}">
                                         {{ $isSender ? 'You' : $message->sender->name }}
                                     </h5>
-                                      <x-message-reply-bubble :message="$message" :is-sender="$isSender" >
 
+                                <x-message-reply-bubble :message="$message" :isSender="$isSender" >
 
-                                    @if (!$message->deleted_at)
-                                        @if ($message->message)
-                                            <div
-                                                class="{{ $isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' : 'bg-gray-100 text-gray-900 rounded-3xl rounded-tl-none' }} px-4 py-2 break-words">
-                                                {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
-                                            </div>
-                                        @endif
+                                    <x-message-reactions :message="$message" :isSender="$isSender" >
+                                        <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"/>
+                                    </x-messsage-reactions>
 
-                                        @if ($message->file_name)
-                                            @if ($isImage)
-                                                <div x-data="{ open: false }">
-                                                    <img
-                                                        @click="open = true"
-                                                        src="{{ asset('storage/'.$message->folder_path) }}"
-                                                        alt="Image"
-                                                        class="w-30 h-20 rounded-lg object-cover border cursor-pointer hover:opacity-90 mt-2"
-                                                    >
+                                </x-message-actions>
 
-                                                    <div
-                                                        x-show="open"
-                                                        @click.away="open = false"
-                                                        x-cloak
-                                                        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
-                                                    >
-                                                        <div class="relative max-w-4xl max-h-[90vh]">
-                                                            <img
-                                                                src="{{ asset('storage/'.$message->folder_path) }}"
-                                                                alt="Full view"
-                                                                class="max-w-full max-h-[80vh] object-contain"
-                                                            >
-                                                            <button
-                                                                @click="open = false"
-                                                                class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                            </x-message-reply-bubble>
 
-                                            @else
-
-                                                    <a href="{{ asset('storage/' . $message->folder_path) }}"
-                                                        download
-                                                        class="flex items-center gap-2 mt-2 px-3 py-2 rounded text-sm break-words
-                                                        {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-black' }}">
-                                                        📎 {{ $message->file_original_name }}
-                                                    </a>
-
-                                            @endif
-                                        @endif
-                                    @else
-                                           <div
-                                                class="bg-transparent border border-gray-300 text-gray-600 rounded-3xl px-4 py-2 break-words">
-                                                <em class="text-sm text-gray-400">This message has been deleted</em>
-                                            </div>
-                                    @endif
-                                            </x-message-reply-bubble>
-                                    </x-message-actions>
-
-                                        <div class="absolute -right-8 text-xs text-gray-500 {{ $isSender ? '-left-8' : '-right-8' }}"
-                                            x-data="{ showReactions: false }">
-
-                                            @if (!$isSender)
-                                                <button
-                                                @click="showReactions = true"
-                                                class="flex items-center justify-center w-6 h-6"
-                                                 id="button-{{ $message->id }}"
-                                            >
-                                                @if (!empty($message->reaction))
-                                                    <span class="text-lg bg-gray-100 rounded-full px-2.5 py-1.5 inline-flex items-center justify-center min-w-[2.5rem]">
-                                                        {{ $message->reaction }}
-                                                    </span>
-                                                @else
-                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity  hover:text-indigo-600" >
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-                                                    </svg>
-                                                @endif
-
-                                                </button>
-                                            @else
-                                                <div class="flex items-center justify-center w-6 h-6">
-                                                     @if (!empty($message->reaction))
-                                                    <span class="text-lg bg-gray-100 rounded-full px-2.5 py-1.5 inline-flex items-center justify-center min-w-[2.5rem]">
-                                                        {{ $message->reaction }}
-                                                    </span>
-                                                  @endif
-                                                </div>
-                                            @endif
-
-
-                                            <!-- Reaction Picker Popup -->
-                                            <div
-                                                x-show="showReactions"
-                                                @click.away="showReactions = false"
-                                                x-transition:enter="transition ease-out duration-100"
-                                                x-transition:enter-start="opacity-0 scale-95"
-                                                x-transition:enter-end="opacity-100 scale-100"
-                                                x-transition:leave="transition ease-in duration-75"
-                                                x-transition:leave-start="opacity-100 scale-100"
-                                                x-transition:leave-end="opacity-0 scale-95"
-                                                class="absolute bottom-full {{ $isSender ? 'right-0 origin-bottom-right' : 'left-0 origin-bottom-left' }} mb-2 bg-white shadow-xl rounded-full p-2.5 flex gap-2 z-50 border border-gray-200 transform scale-110">
-                                                <!-- Reaction options -->
-                                                <button @click="$wire.addReaction('❤️', {{ $message->id }}); showReactions = false"
-                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
-                                                    ❤️
-                                                </button>
-                                                <button @click="$wire.addReaction('😂', {{ $message->id }}); showReactions = false"
-                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
-                                                    😂
-                                                </button>
-                                                <button @click="$wire.addReaction('😮', {{ $message->id }}); showReactions = false"
-                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
-                                                    😮
-                                                </button>
-                                                <button @click="$wire.addReaction('😢', {{ $message->id }}); showReactions = false"
-                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
-                                                    😢
-                                                </button>
-                                                <button @click="$wire.addReaction('👍', {{ $message->id }}); showReactions = false"
-                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
-                                                    👍
-                                                </button>
-                                                <button @click="$wire.addReaction('👎', {{ $message->id }}); showReactions = false"
-                                                        class="hover:scale-150 transition-transform text-2xl w-10 h-10 flex items-center justify-center">
-                                                    👎
-                                                </button>
-                                            </div>
-                                        </div>
                                     <h6 class="text-xs text-gray-500 mt-1 {{  $isSender ? 'ml-auto' : 'mr-auto'}}">
                                         {{ $timestamp }}
                                     </h6>
@@ -297,6 +176,7 @@
                     class="w-full px-3 py-2 border-t border-gray-200 bg-white sticky bottom-0">
                     <div
                         class="w-full pl-3 pr-1 py-1 rounded-3xl border border-gray-200 items-center gap-2 flex justify-between">
+
                         <div class="flex w-full items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
                                 viewBox="0 0 22 22" fill="none">
@@ -308,35 +188,35 @@
                             </svg>
 
 
-                            <div class="relative"> <!-- Container for input group -->
-                                <!-- Reply Preview (conditionally shown above input) -->
+                            <div class="relative" style="width: 600px"> <!-- Fixed width container -->
+                                <!-- Floating reply preview -->
                                 @if($replyingTo)
-                                    <div class="mb-2 bg-gray-100 p-2 rounded text-sm text-gray-600">
-                                        <div class="flex justify-between items-start">
-                                            <div>
-                                                <span class="font-medium">Replying to:</span>
-                                                <span class="italic">"{{ Str::limit($replyingTo['content'], 50) }}"</span>
+                                    <div class="absolute bottom-full left-0 mb-1 w-full z-10">
+                                        <div class="w-fit max-w-full bg-gray-100 p-2 rounded text-sm text-gray-600 shadow-sm">
+                                            <div class="flex justify-between items-start">
+                                                <div class="min-w-0"> <!-- Prevent text overflow -->
+                                                    <span class="font-medium">Replying to:</span>
+                                                    <span class="italic truncate">"{{ Str::limit($replyingTo['content'], 50) }}"</span>
+                                                </div>
+                                                <button
+                                                    wire:click.prevent="$set('replyingTo', null)"
+                                                    class="flex-shrink-0 text-gray-400 hover:text-gray-600 text-lg ml-2"
+                                                >
+                                                    &times;
+                                                </button>
                                             </div>
-                                            <button
-                                                wire:click="$set('replyingTo', null)"
-                                                class="text-gray-400 hover:text-gray-600 text-lg"
-                                            >
-                                                &times;
-                                            </button>
                                         </div>
                                     </div>
                                 @endif
 
-
-                                <!-- Your existing input (unchanged) -->
-                                {{-- <input type="hidden" wire:model="replyingTo.id"> --}}
-
-                                <input autocomplete="off"
+                                <!-- Text input -->
+                                <input
+                                    autocomplete="off"
                                     x-data
                                     @keydown.enter.prevent="$wire.sendMessage()"
                                     wire:model.defer="message"
                                     id="message-input"
-                                    class="w-4/5 text-black text-xs font-medium rounded leading-4 focus:outline-none"
+                                    class="w-full text-black text-xs font-medium rounded leading-4 focus:outline-none px-3 py-2 border border-gray-300"
                                     placeholder="Type here...">
                             </div>
 
@@ -467,19 +347,22 @@
     }
 
             // Scroll to Message
-        Livewire.on('scroll-to-message', (event) => {
+   // Wrap in DOMContentLoaded and make it more specific
+document.addEventListener('DOMContentLoaded', function() {
+    Livewire.on('scroll-to-message', (event) => {
+        // Add delay to ensure Livewire finishes rendering
+        setTimeout(() => {
             const messageElement = document.getElementById(`message-${event.index}`);
-             if (messageElement) {
-                console.log('Found message element:', messageElement);
+            if (messageElement) {
+                console.log('Scrolling to message:', event.index);
                 messageElement.scrollIntoView({
-                    behavior: 'smooth',
+                    behavior: 'auto', // Change to 'auto' first for testing
                     block: 'center'
                 });
-            } else {
-                console.warn(`No element found with id message-${event.index}`);
             }
-        });
-
+        }, 50); // 50ms delay
+    });
+});
 
          Livewire.on('focus-message-input', () => {
                 document.getElementById('message-input').focus();
