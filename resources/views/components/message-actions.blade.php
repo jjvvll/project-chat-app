@@ -2,7 +2,7 @@
      x-data="{ showActions: false }"
     @contextmenu.prevent="showActions = true"
     @click.away="showActions = false"
-     class="grid gap-1 relative group items-center"
+     class="grid gap-1 relative group items-center "
       id="message-actions-menu"
 
 >
