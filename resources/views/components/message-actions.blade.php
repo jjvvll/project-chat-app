@@ -36,10 +36,12 @@
         </button>
         <button
             @click="showActions = false"
+            wire:click="openForwardModal({{ $message->id }})"
             class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
         >
             Forward
         </button>
+
         @if($isSender)
             <button
                 @click="showActions = false"
@@ -53,3 +55,4 @@
     </div>
     @endif
 </div>
+

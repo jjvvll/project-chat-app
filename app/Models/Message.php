@@ -21,7 +21,9 @@ class Message extends Model
         'is_read',
         'reaction',
         'is_deleted',
-        'parent_id'
+        'parent_id',
+        'is_forwarded'
+
     ];
 
     public function sender()  {

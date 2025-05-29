@@ -130,7 +130,7 @@
                                         @endif
                                 @endunless
 
-                            <x-message-actions :message="$message" :isSender="$isSender">
+                            <x-message-actions :message="$message" :isSender="$isSender" :showForwardModal="$showForwardModal" :users="$users" >
 
                                 <div>
                                     <h5 class="text-sm font-semibold {{ $isSender ? 'text-right' : '' }}">
@@ -156,6 +156,8 @@
                     </div>
 
                     @endforeach
+
+                     <x-message-forward :showForwardModal="$showForwardModal" :users="$users"/>
                 </div>
 
                 {{-- Bottom Message Search Box --}}

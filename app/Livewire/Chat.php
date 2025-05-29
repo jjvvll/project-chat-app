@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Message;
+use App\Models\User;
 use App\Events\MessageSentEvent;
 use App\Events\UnreadMessage;
 use App\Events\MessageReaction;
@@ -38,6 +39,9 @@ class Chat extends Component
 
 
     public $searhCount ;
+    public $users;
+    public $showForwardModal;
+    public $forwardMessageId;
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -49,6 +53,11 @@ class Chat extends Component
         $this->messages =  $this->getMessages();
 
         $this->markMessagesAsRead();
+
+        // Exclude sender and receiver
+        $excludeIds = [$this->senderId, $this->receiverId];
+        $this->users = User::whereNotIn('id', $excludeIds)->get();
+
 
         // dd(vars: $messages);
 
@@ -218,7 +227,7 @@ class Chat extends Component
 
             $fileName = $this->file->hashName();
             $fileOriginalName = $this->file->getClientOriginalName();
-            $forlderPath = $this->file->store('chat_files', 'public');
+            $folder_path = $this->file->store('chat_files', 'public');
             $fileType = $this->file->getMimeType();
        }
 
@@ -228,7 +237,7 @@ class Chat extends Component
         'message' =>  $this->message,
         'file_name' => $fileName ?? null,
         'file_original_name' => $fileOriginalName ?? null,
-        'folder_path' => $forlderPath ?? null,
+        'folder_path' => $folder_path ?? null,
         'file_type' =>  $fileType ?? null,
         'is_read' => false,
         'parent_id' => $this->replyingTo['id'] ?? null]);
@@ -457,4 +466,37 @@ class Chat extends Component
 
         $this->dispatch('focus-message-input');
     }
+
+    public function openForwardModal( $messageId)
+    {
+        $this->forwardMessageId = $messageId;
+        $this->showForwardModal = true;
+    }
+
+    public function forwardMessage($recipientId)
+    {
+
+        $message = Message::findOrFail($this->forwardMessageId);
+
+        // Clone the message and send to another user
+        $sentMessage = Message::create([
+            'sender_id' => $this->senderId,
+            'receiver_id' => $recipientId,
+            'message' =>  $message->message,
+            'file_name' =>  $message->fileName,
+            'file_original_name' => $message->fileOriginalName,
+            'folder_path' => $message->folder_path,
+            'file_type' =>  $message->fileType,
+            'is_read' => $message->is_read,
+            'is_forwarded' => true
+        ]);
+
+        #broascast the message
+        broadcast(event: new MessageSentEvent($sentMessage));
+
+
+        $this->showForwardModal = false;
+        session()->flash('message', 'Message forwarded!');
+    }
+
 }
