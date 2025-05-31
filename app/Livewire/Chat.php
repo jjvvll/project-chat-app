@@ -14,6 +14,9 @@ use App\Events\UserTyping;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
 
 
 
@@ -403,7 +406,7 @@ class Chat extends Component
 
 
 
-          $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
+        $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
         broadcast(event: new MessageReaction($message));
 
     }
@@ -478,19 +481,31 @@ class Chat extends Component
 
         $message = Message::findOrFail($this->forwardMessageId);
 
-        // Clone the message and send to another user
+        $originalPath = $message->folder_path; // already includes filename
+        $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+
+        // Generate a new file name (e.g., with unique ID or timestamp)
+        $newFileName = 'copy_' . Str::random(8) . '.' . $extension;
+        $newFilePath = 'chat_files/' . $newFileName;
+
+        // Copy the file
+        if (Storage::disk('public')->exists($originalPath)) {
+           Storage::disk('public')->copy($originalPath, $newFilePath);
+
+        }
+
+        // Create the new message
         $sentMessage = Message::create([
             'sender_id' => $this->senderId,
             'receiver_id' => $recipientId,
-            'message' =>  $message->message,
-            'file_name' =>  $message->fileName,
-            'file_original_name' => $message->fileOriginalName,
-            'folder_path' => $message->folder_path,
-            'file_type' =>  $message->fileType,
-            'is_read' => $message->is_read,
-            'is_forwarded' => true
+            'message' => $message->message,
+            'file_name' => $newFileName,
+            'file_original_name' => $message->file_original_name,
+            'folder_path' => $newFilePath, // this is full path: chat_files/filename
+            'file_type' => $message->file_type,
+            'is_read' => false,
+            'is_forwarded' => true,
         ]);
-
         #broascast the message
         broadcast(event: new MessageSentEvent($sentMessage));
 

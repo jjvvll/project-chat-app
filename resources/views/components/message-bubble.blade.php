@@ -1,19 +1,23 @@
                                     @if (!$message->deleted_at)
+                                        @if (($message->message || $message->file_name) && $message->is_forwarded)
+                                            <div class="text-xs italic text-black-500 mb-1">
+                                                @if ($isSender)
+                                                    <div class="text-right">You forwarded a message</div>
+                                                @else
+                                                        <div class="text-left">Forwarded</div>
+                                                @endif
+                                            </div>
+                                        @endif
+
                                         @if ($message->message && !$message->is_forwarded)
                                             <div class="{{ $isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' : 'bg-gray-100 text-gray-900 rounded-3xl rounded-tl-none' }} w-full px-4 py-2 break-all
  whitespace-normal min-w-0 overflow-hidden text-ellipsis">
                                                 {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
                                             </div>
-                                        @else
-                                            <div class="text-xs italic text-black-500 mb-1">
-                                                @if ($isSender)
-                                                        <div class="text-right">You forwarded a message</div>
-                                                @else
-                                                        <div class="text-left">Forwarded</div>
-                                                @endif
-                                            </div>
+                                        @elseif ($message->message)
 
-                                               <div class="{{$isSender ? 'bg-indigo-600 text-white rounded-tr-none':'italic bg-gray-100 text-gray-500 rounded-tl-none'}} relative rounded-3xl w-full px-4 py-2 break-all whitespace-normal min-w-0 overflow-hidden text-ellipsis">
+
+                                               <div class="{{$isSender ? 'bg-indigo-600 text-white rounded-tr-none italic':'italic bg-gray-100 text-gray-500 rounded-tl-none'}} relative rounded-3xl w-full px-4 py-2 break-all whitespace-normal min-w-0 overflow-hidden text-ellipsis">
                                                     <div>
                                                         {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
                                                     </div>

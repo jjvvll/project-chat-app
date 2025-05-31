@@ -308,6 +308,13 @@
             audio.play();
         });
 
+        window.Echo.private(`reaction-channel.{{$receiverId}}.{{$senderId}}`)
+        .listen('MessageReaction', (event) => {
+        console.log(event);
+            const audio = new Audio('{{ asset('storage/sounds/notification-sound.mp3') }}');
+            audio.play();
+        });
+
     // Listen to whispers from the other client
     window.Echo.private(`chat-channel.{{ $senderId }}.{{ $receiverId }}`)
         .listenForWhisper('typing', (event) => {
