@@ -15,13 +15,17 @@ class MessageBubble extends Component
     public $isSender;
     public $search;
     public $isImage;
+    public $editingMessageId = null;    // ?int = nullable integer
+    public $editedContent = null;    // ?string = nullable string
 
-     public function __construct($message, $isSender, $search, $isImage)
+     public function __construct($message, $isSender, $search, $isImage,$editingMessageId, $editedContent)
     {
         $this->message = $message;
         $this->isSender = $isSender;
         $this->search = $search;
         $this->isImage = $isImage;
+        $this->editingMessageId = $editingMessageId;
+        $this->editedContent = $editedContent;
     }
 
     /**

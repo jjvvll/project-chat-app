@@ -10,10 +10,36 @@
                                         @endif
 
                                         @if ($message->message && !$message->is_forwarded)
-                                            <div class="{{ $isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' : 'bg-gray-100 text-gray-900 rounded-3xl rounded-tl-none' }} w-full px-4 py-2 break-all
- whitespace-normal min-w-0 overflow-hidden text-ellipsis">
+                                        <p>{{ var_dump($editingMessageId) }} | {{ var_dump($message->id) }}</p>
+                                            @if ((int)$editingMessageId === $message->id)
+
+                                                    <textarea
+                                                        wire:model="editedContent"
+                                                        class="w-full p-2 border rounded-lg"
+                                                    >{{ $editedContent }}</textarea>
+                                                    <div class="flex gap-2 mt-2">
+                                                        <button wire:click="saveEditedMessage" class="bg-green-500 text-white px-3 py-1 rounded">
+                                                        Save
+                                                        </button>
+                                                        <button wire:click="cancelEdit" class="bg-gray-500 text-white px-3 py-1 rounded">
+                                                        Cancel
+                                                        </button>
+                                                    </div>
+                                            @else
+                                                <div class="{{ $isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
+                                                                    'bg-gray-100 text-gray-900 rounded-3xl rounded-tl-none' }} w-full px-4 py-2 break-all
+                                                                    whitespace-normal min-w-0 overflow-hidden text-ellipsis">
                                                 {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
                                             </div>
+                                            <button
+                                                        wire:click="editMessage('{{ $message->id }}', '{{ $message->message }}')"
+                                                        class="bg-gray-200 px-2 py-1 rounded text-sm mt-1"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                            @endif
+
+
                                         @elseif ($message->message)
 
 

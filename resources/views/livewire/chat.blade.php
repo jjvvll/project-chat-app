@@ -140,7 +140,7 @@
                                 <x-message-reply-bubble :message="$message" :isSender="$isSender" >
 
                                     <x-message-reactions :message="$message" :isSender="$isSender" >
-                                        <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"/>
+                                        <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
                                     </x-messsage-reactions>
 
                                 </x-message-actions>

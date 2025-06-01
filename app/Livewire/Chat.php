@@ -45,6 +45,8 @@ class Chat extends Component
     public $users;
     public $showForwardModal;
     public $forwardMessageId;
+    public $editingMessageId = null;
+    public $editedContent = '';
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -512,6 +514,46 @@ class Chat extends Component
 
         $this->showForwardModal = false;
         session()->flash('message', 'Message forwarded!');
+    }
+
+
+
+
+    public function editMessage($messageId, $currentContent)
+    {
+        $this->editingMessageId = $messageId;
+        $this->editedContent = $currentContent;
+
+    }
+
+    public function saveEditedMessage()
+    {
+        $editedMessage = Message::findOrFail((int)$this->editingMessageId);
+        $editedMessage->update(['message' => $this->editedContent]);
+
+    // Update the message in the local Livewire collection
+                if ($this->messages instanceof \Illuminate\Support\Collection) {
+                    // If it's a Collection
+                    $this->messages = $this->messages->map(function ($msg) use ($editedMessage) {
+                        return $msg->id === $editedMessage->id ? $editedMessage : $msg;
+                    });
+                } else {
+                    // If it's an array
+                    foreach ($this->messages as $i => $msg) {
+                        if ($msg['id'] === $editedMessage->id) {
+                            $this->messages[$i] = $editedMessage   ;
+                            break;
+                        }
+                    }
+                }
+
+        $this->cancelEdit();
+    }
+
+    public function cancelEdit()
+    {
+        $this->editingMessageId = null;
+        $this->editedContent = '';
     }
 
 }
