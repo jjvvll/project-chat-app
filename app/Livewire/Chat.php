@@ -10,7 +10,7 @@ use App\Events\MessageSentEvent;
 use App\Events\UnreadMessage;
 use App\Events\MessageReaction;
 use App\Events\MessageDeleted;
-use App\Events\UserTyping;
+use App\Events\listenEditedMessage;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Cache;
@@ -484,26 +484,28 @@ class Chat extends Component
         $message = Message::findOrFail($this->forwardMessageId);
 
         $originalPath = $message->folder_path; // already includes filename
-        $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+       if($originalPath){
+            $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
 
-        // Generate a new file name (e.g., with unique ID or timestamp)
-        $newFileName = 'copy_' . Str::random(8) . '.' . $extension;
-        $newFilePath = 'chat_files/' . $newFileName;
+            // Generate a new file name (e.g., with unique ID or timestamp)
+            $newFileName = 'copy_' . Str::random(8) . '.' . $extension;
+            $newFilePath = 'chat_files/' . $newFileName;
 
-        // Copy the file
-        if (Storage::disk('public')->exists($originalPath)) {
-           Storage::disk('public')->copy($originalPath, $newFilePath);
+            // Copy the file
+            if (Storage::disk('public')->exists($originalPath)) {
+            Storage::disk('public')->copy($originalPath, $newFilePath);
 
         }
+       }
 
         // Create the new message
         $sentMessage = Message::create([
             'sender_id' => $this->senderId,
             'receiver_id' => $recipientId,
             'message' => $message->message,
-            'file_name' => $newFileName,
+            'file_name' => $newFileName ?? null,
             'file_original_name' => $message->file_original_name,
-            'folder_path' => $newFilePath, // this is full path: chat_files/filename
+            'folder_path' => $newFilePath ?? null, // this is full path: chat_files/filename
             'file_type' => $message->file_type,
             'is_read' => false,
             'is_forwarded' => true,
@@ -523,6 +525,18 @@ class Chat extends Component
     {
         $this->editingMessageId = $messageId;
         $this->editedContent = $currentContent;
+
+        // $working = Message::find(707); // A message where edit works
+        // $broken = Message::find(708); // Your problematic message
+
+        // // Output all differences
+        // dd([
+        //     'diff' => array_diff_assoc($broken->toArray(), $working->toArray()),
+        //     'is_forwarded_type' => [
+        //         'working' => gettype($working->is_forwarded),
+        //         'broken' => gettype($broken->is_forwarded)
+        //     ]
+        // ]);
 
     }
 
@@ -546,10 +560,17 @@ class Chat extends Component
                         }
                     }
                 }
+           #broascast the message
+        broadcast(event: new listenEditedMessage($editedMessage));
 
         $this->cancelEdit();
     }
 
+
+        #[On('echo-private:EditedMessage-channel.{senderId}.{receiverId},listenEditedMessage')]
+        public function listenEditedMessage($event){
+            ///listen for reaction update in a message
+        }
     public function cancelEdit()
     {
         $this->editingMessageId = null;

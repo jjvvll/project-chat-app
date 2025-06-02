@@ -1,10 +1,19 @@
 <div
-     x-data="{ showActions: false }"
-    @contextmenu.prevent="showActions = true"
-    @click.away="showActions = false"
-     class="grid gap-1 relative group items-center "
-      id="message-actions-menu"
+       x-data="{
+        id: {{ $message->id }},
+        get showActions() {
+            return $store.dropdown.openId === this.id
+        },
+        toggleActions() {
+            $store.dropdown.openId = (this.showActions ? null : this.id)
+        }
+    }"
 
+    @contextmenu.prevent="toggleActions"
+    @click.away="$store.dropdown.openId = null"
+
+    class="grid gap-1 relative group items-center "
+    id="message-actions-menu"
 >
     <!-- Trigger -->
     <div class="cursor-pointer" >
@@ -41,6 +50,16 @@
         >
             Forward
         </button>
+
+        @if ($isSender && (bool)$message->is_forwarded === false)
+            <button
+                @click="showActions = false"
+                wire:click="editMessage({{ $message->id }}, @js($message->message))"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+                Edit
+            </button>
+        @endif
 
         @if($isSender)
             <button

@@ -377,4 +377,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('message-input').focus();
             });
 
+    document.addEventListener('alpine:init', () => {
+        Alpine.store('dropdown', {
+            openId: null
+        })
+    })
 </script>
