@@ -72,7 +72,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             <div id="chat-container"
-                class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-15 overflow-y-auto h-[calc(100vh-12rem)] scroll-smooth">
+                class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-15 overflow-y-auto h-[calc(100vh-12rem)] scroll-smooth ">
 
                 <div class="w-full px-5 py-8 grow" id="message-list">
                    <div class="flex justify-center">
@@ -112,8 +112,8 @@
                                     : $message->created_at->format('M j, Y \a\t h:i A'));
                         @endphp
 
-                        <div class="flex {{ $isSender ? 'justify-end' : 'justify-start' }} pb-3">
-                            <div class="flex gap-2.5 max-w-[50%]">
+                        <div class=" flex {{ $isSender ? 'justify-end' : 'justify-start' }} pb-3">
+                            <div class=" max-w-[50%] {{ (int)$editingMessageId === $message->id ? 'w-full' : 'flex gap-2.5' }}">
                                 @unless($isSender)
                                     {{-- <img src="{{ asset('storage/' . $message->sender->profile_photo) }}" alt="Profile"
                                         class="w-10 h-11 rounded-full"> --}}
@@ -137,15 +137,13 @@
                                         {{ $isSender ? 'You' : $message->sender->name }}
                                     </h5>
 
-                                <x-message-reply-bubble :message="$message" :isSender="$isSender" >
+                                <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null">
 
                                     <x-message-reactions :message="$message" :isSender="$isSender" >
                                         <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
                                     </x-messsage-reactions>
-
+                                </x-message-reply-bubble>
                                 </x-message-actions>
-
-                            </x-message-reply-bubble>
 
                                     <h6 class="text-xs text-gray-500 mt-1 {{  $isSender ? 'ml-auto' : 'mr-auto'}}">
                                         {{ $timestamp }}

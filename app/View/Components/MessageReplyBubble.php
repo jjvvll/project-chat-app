@@ -13,11 +13,13 @@ class MessageReplyBubble extends Component
      */
     public $message;
     public $isSender;
+    public $editingMessageId = null;
 
-    public function __construct($message, $isSender)
+    public function __construct($message, $isSender, $editingMessageId)
     {
         $this->message = $message;
         $this->isSender = $isSender;
+         $this->editingMessageId = $editingMessageId;
     }
     /**
      * Get the view / contents that represent the component.

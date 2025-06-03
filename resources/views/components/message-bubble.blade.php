@@ -11,13 +11,19 @@
                                @if ($message->message && !$message->is_forwarded)
                                         {{-- <p>{{ var_dump($editingMessageId) }} | {{ var_dump($message->id) }}</p> --}}
                                             @if ((int)$editingMessageId === $message->id)
-                                                <p class="text-xs text-red-500">[DEBUG] Editing Message ID: {{ $editingMessageId }}</p>
+                                                <p class="text-xs text-red-500"> Editing Message ID: {{ $editingMessageId }}</p>
 
 
-                                                    <textarea
+                                                  <textarea
+                                                        x-data
+                                                        x-ref="ta"
+                                                        x-init="$watch('editedContent', () => { $refs.ta.style.height = 'auto'; $refs.ta.style.height = $refs.ta.scrollHeight + 'px' })"
                                                         wire:model="editedContent"
-                                                        class="w-full p-2 border rounded-lg"
+                                                        x-on:input="$refs.ta.style.height = 'auto'; $refs.ta.style.height = $refs.ta.scrollHeight + 'px'"
+                                                        class=" w-full p-2 border rounded-lg resize-none overflow-hidden"
+                                                        rows="1"
                                                     ></textarea>
+
                                                     <div class="flex gap-2 mt-2">
                                                         <button wire:click="saveEditedMessage" class="bg-green-500 text-white px-3 py-1 rounded">
                                                         Save
@@ -39,7 +45,7 @@
 
                                         <div class="relative {{$isSender ? 'pr-4' : 'pl-4'}} mb-3">
                                             <!-- Left indicator line -->
-                                            <div class="{{$isSender ? 'right-0': 'left-0'}} absolute top-0 bottom-0 w-1 bg-gray-300 rounded-full"></div>
+                                            <div class="{{$isSender ? 'right-0': 'left-0'}} absolute top-0 bottom-0 w-1 bg-blue-500 rounded-full"></div>
 
                                             <!-- Message bubble (keep your existing rounded styles) -->
                                             <div class="{{$isSender ? 'bg-indigo-600 rounded-tr-none text-white ' : 'bg-gray-100 rounded-tl-none' }} rounded-lg  p-3">
