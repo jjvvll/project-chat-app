@@ -8,6 +8,7 @@
                                                 @endif
                                             </div>
                                         @endif
+
                                @if ($message->message && !$message->is_forwarded)
                                         {{-- <p>{{ var_dump($editingMessageId) }} | {{ var_dump($message->id) }}</p> --}}
                                             @if ((int)$editingMessageId === $message->id)
@@ -17,43 +18,112 @@
                                                   <textarea
                                                         x-data
                                                         x-ref="ta"
-                                                        x-init="$watch('editedContent', () => { $refs.ta.style.height = 'auto'; $refs.ta.style.height = $refs.ta.scrollHeight + 'px' })"
+                                                        x-init="
+                                                            $nextTick(() => {
+                                                                $refs.ta.style.height = 'auto';
+                                                                $refs.ta.style.height = $refs.ta.scrollHeight + 'px';
+                                                            });
+                                                            $watch('editedContent', () => {
+                                                                $refs.ta.style.height = 'auto';
+                                                                $refs.ta.style.height = $refs.ta.scrollHeight + 'px';
+                                                            });
+                                                        "
+                                                        x-on:input="
+                                                            $refs.ta.style.height = 'auto';
+                                                            $refs.ta.style.height = $refs.ta.scrollHeight + 'px';
+                                                        "
+                                                        x-on:keydown="
+                                                            // List of keys that *do not* change content and we want to ignore
+                                                            const ignoredKeys = [
+                                                                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                                                                'Control', 'Shift', 'Alt', 'Meta', 'CapsLock',
+                                                                'Tab', 'Escape', 'Enter' // Enter handled separately below
+                                                            ];
+                                                            if (!ignoredKeys.includes($event.key)) {
+                                                                window.savedSelectionStart = $refs.ta.selectionStart;
+                                                                window.savedSelectionEnd = $refs.ta.selectionEnd;
+                                                                window.savedScrollTop = $refs.ta.scrollTop;
+                                                            }
+                                                        "
+                                                        x-on:keydown.enter.prevent="
+                                                            if ($event.shiftKey) {
+                                                                const ta = $refs.ta;
+                                                                const start = ta.selectionStart;
+                                                                const end = ta.selectionEnd;
+
+                                                                ta.value = ta.value.substring(0, start) + '\n' + ta.value.substring(end);
+                                                                ta.selectionStart = ta.selectionEnd = start + 1;
+
+                                                                editedContent = ta.value;
+
+                                                                  // Resize textarea immediately after inserting newline
+                                                                ta.style.height = 'auto';
+                                                                ta.style.height = ta.scrollHeight + 'px';
+
+                                                                const scrollPos = ta.scrollTop;
+                                                                $nextTick(() => {
+                                                                    ta.scrollTop = scrollPos;
+                                                                });
+                                                            } else {
+                                                                $wire.saveEditedMessage();
+                                                            }
+                                                        "
+
+                                                        x-on:input.debounce.500ms="
+                                                            $nextTick(() => {
+                                                                if(window.savedSelectionStart !== undefined){
+                                                                    $refs.ta.selectionStart = window.savedSelectionStart;
+                                                                    $refs.ta.selectionEnd = window.savedSelectionEnd;
+                                                                    $refs.ta.scrollTop = window.savedScrollTop;
+                                                                    window.savedSelectionStart = undefined;
+                                                                    window.savedSelectionEnd = undefined;
+                                                                    window.savedScrollTop = undefined;
+                                                                }
+                                                            });
+                                                        "
                                                         wire:model="editedContent"
                                                         x-on:input="$refs.ta.style.height = 'auto'; $refs.ta.style.height = $refs.ta.scrollHeight + 'px'"
-                                                        class=" w-full p-2 border rounded-lg resize-none overflow-hidden"
+                                                        class="bg-indigo-600 text-white w-full p-2 border rounded-3xl resize-none overflow-hidden px-4 py-2 "
                                                         rows="1"
                                                     ></textarea>
 
                                                     <div class="flex gap-2 mt-2">
-                                                        <button wire:click="saveEditedMessage" class="bg-green-500 text-white px-3 py-1 rounded">
-                                                        Save
+                                                        <button wire:click="saveEditedMessage" >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
                                                         </button>
-                                                        <button wire:click="cancelEdit" class="bg-gray-500 text-white px-3 py-1 rounded">
-                                                        Cancel
+                                                        <button wire:click="cancelEdit" >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
                                                         </button>
                                                     </div>
                                             @else
-                                                <div class="{{ $isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
-                                                                    'bg-gray-100 text-gray-900 rounded-3xl rounded-tl-none' }} w-full px-4 py-2 break-all
-                                                                    whitespace-normal min-w-0 overflow-hidden text-ellipsis">
-                                                {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
+                                                <div class="{{$isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
+                                                                    'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none'}}
+                                                                    w-full px-4 py-2 min-w-0 break-words break-all whitespace-pre-line" text-ellipsis">
+                                                {!! $search ? $this->highlightText($message->message, $search) : nl2br(e($message->message))  !!}
                                             </div>
                                             @endif
 
 
                                         @elseif ($message->message)
 
-                                        <div class="relative {{$isSender ? 'pr-4' : 'pl-4'}} mb-3">
+
                                             <!-- Left indicator line -->
-                                            <div class="{{$isSender ? 'right-0': 'left-0'}} absolute top-0 bottom-0 w-1 bg-blue-500 rounded-full"></div>
+                                            {{-- <div class="{{$isSender ? 'right-0': 'left-0'}} absolute top-0 bottom-0 w-1 bg-blue-500 rounded-full"></div> --}}
 
                                             <!-- Message bubble (keep your existing rounded styles) -->
-                                            <div class="{{$isSender ? 'bg-indigo-600 rounded-tr-none text-white ' : 'bg-gray-100 rounded-tl-none' }} rounded-lg  p-3">
-                                                                    <div>
-                                                                        {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
-                                                                    </div>
+                                            <div class="{{$isSender ? 'bg-indigo-600 rounded-tr-none text-white ' : 'bg-gray-200  rounded-tl-none' }} rounded-lg  p-3 max-w-md ">
+                                                <div class="border-l-2 {{$isSender ? 'border-white ml-1 mr-1 pl-1 pr-1' : 'border-gray-500 ml-1 mr-1 pl-1 pr-1' }} ">
+                                                        <div class="break-all whitespace-pre-wrap">
+                                                            {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
+                                                        </div>
+                                                </div>
+
                                             </div>
-                                        </div>
+
 
                                         @endif
 
@@ -81,7 +151,7 @@
                                                             >
                                                             <button
                                                                 @click="open = false"
-                                                                class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300"
+                                                                class="absolute top-4 right-4 text-black text-2xl hover:text-gray-300"
                                                             >
                                                                 ✕
                                                             </button>
@@ -94,7 +164,7 @@
                                                     <a href="{{ asset('storage/' . $message->folder_path) }}"
                                                         download
                                                         class="flex items-center gap-2 mt-2 px-3 py-2 rounded text-sm break-words
-                                                        {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-black' }}">
+                                                        {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200  text-black' }}">
                                                         📎 {{ $message->file_original_name }}
                                                     </a>
 

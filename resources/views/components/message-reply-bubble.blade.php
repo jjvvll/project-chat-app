@@ -2,10 +2,13 @@
 <div class="mb-2">
     {{-- Reply Preview (if replying to another message) --}}
             @if ($message->parent && ($message->parent->message || $message->parent->file_name) && !$message->parent->trashed())
-                <div class="{{ $isSender ? 'ml-auto' : 'mr-auto' }} border-l-4 border-blue-500 bg-gray-100 px-3 py-2 rounded-md text-sm text-gray-700 mb-1 max-w-xs ">
-                    <div class="font-semibold text-gray-600">
-                        {{ $message->parent->sender->id === auth()->id() ? 'You' : $message->parent->sender->name ?? 'Unknown' }}
-                    </div>
+                <div class="mr-auto  bg-gray-100 px-3 py-2 rounded-md text-sm text-gray-700 mb-1 max-w-xs ">
+                    <div class="border-l-2 border-gray-500 ml-1 mr-1 pl-1 pr-1">
+                         <div class="font-semibold text-gray-600">
+                            {{ $message->parent->sender->id === auth()->id() ? 'You' : $message->parent->sender->name ?? 'Unknown' }}
+                        </div>
+
+
 
                     @php
                         $isImage = str_starts_with($message->parent->file_type, 'image/');
@@ -28,6 +31,7 @@
                                             @endif
                                         @endif
 
+                    </div>
 
                 </div>
 

@@ -112,7 +112,7 @@
                                     : $message->created_at->format('M j, Y \a\t h:i A'));
                         @endphp
 
-                        <div class=" flex {{ $isSender ? 'justify-end' : 'justify-start' }} pb-3">
+                        <div class=" flex {{ $isSender ? 'justify-end' : 'justify-start' }} pb-3 ">
                             <div class=" max-w-[50%] {{ (int)$editingMessageId === $message->id ? 'w-full' : 'flex gap-2.5' }}">
                                 @unless($isSender)
                                     {{-- <img src="{{ asset('storage/' . $message->sender->profile_photo) }}" alt="Profile"
@@ -137,12 +137,14 @@
                                         {{ $isSender ? 'You' : $message->sender->name }}
                                     </h5>
 
-                                <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null">
+                                {{-- <div class="{{$message->parent_id ? ($isSender ? 'bg-indigo-600 rounded-tr-none rounded-3xl px-3 pt-4' : 'bg-gray-200 rounded-tl-none rounded-3xl px-3 pt-4') : '' }} "> --}}
+                                    <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null">
 
-                                    <x-message-reactions :message="$message" :isSender="$isSender" >
-                                        <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
-                                    </x-messsage-reactions>
-                                </x-message-reply-bubble>
+                                        <x-message-reactions :message="$message" :isSender="$isSender" >
+                                            <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
+                                        </x-messsage-reactions>
+                                    </x-message-reply-bubble>
+                                {{-- </div> --}}
                                 </x-message-actions>
 
                                     <h6 class="text-xs text-gray-500 mt-1 {{  $isSender ? 'ml-auto' : 'mr-auto'}}">
@@ -188,7 +190,7 @@
                             </svg>
 
 
-                            <div class="relative" style="width: 600px"> <!-- Fixed width container -->
+                            <div class=" relative w-full" > <!-- Fixed width container -->
                                 <!-- Floating reply preview -->
                                 @if($replyingTo)
                                     <div class="absolute bottom-full left-0 mb-1 w-full z-10">
@@ -210,14 +212,26 @@
                                 @endif
 
                                 <!-- Text input -->
-                                <input
+                                <textarea
                                     autocomplete="off"
-                                    x-data
-                                    @keydown.enter.prevent="$wire.sendMessage()"
+                                    x-data="{ insertNewline() { this.$el.value += '\n';  this.$el.dispatchEvent(new Event('input')); } }"
+
+                                        x-ref="textarea"
+                                        x-init="$nextTick(() => {
+                                            $refs.textarea.style.height = 'auto';
+                                            $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px';
+                                        })"
+                                        @input="$refs.textarea.style.height = 'auto';
+                                                $refs.textarea.style.height = $refs.textarea.scrollHeight + 'px';"
+
+
+                                    @keydown.enter.prevent="$event.shiftKey ? insertNewline() : $wire.sendMessage()"
+
                                     wire:model.defer="message"
                                     id="message-input"
-                                    class="w-full text-black text-xs font-medium rounded leading-4 focus:outline-none px-3 py-2 border border-gray-300"
+                                    class="resize-none w-full text-black text-sm font-medium rounded leading-4 focus:outline-none px-3 py-2 border border-gray-300"
                                     placeholder="Type here...">
+                                </textarea>
                             </div>
 
                         </div>
