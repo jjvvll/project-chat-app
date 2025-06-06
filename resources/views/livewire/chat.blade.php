@@ -101,7 +101,7 @@
 
                         {{-- Message wrapper --}}
 
-                <div id="message-{{ $index }}">
+                <div id="message-{{ $message->id }}">
                         @php
                             $isSender = $message->sender->id === auth()->user()->id;
                             $isImage = str_starts_with($message->file_type, 'image/');
@@ -138,7 +138,7 @@
                                     </h5>
 
                                 {{-- <div class="{{$message->parent_id ? ($isSender ? 'bg-indigo-600 rounded-tr-none rounded-3xl px-3 pt-4' : 'bg-gray-200 rounded-tl-none rounded-3xl px-3 pt-4') : '' }} "> --}}
-                                    <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null">
+                                    <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null" :index="$index ?? null">
 
                                         <x-message-reactions :message="$message" :isSender="$isSender" >
                                             <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>

@@ -259,7 +259,7 @@ class Chat extends Component
 
     public function loadAllMatchingMessages()
     {
-           $this->noMoreMessages = false; //the purpose of this is to reset load new messages button whenever this button is used
+        $this->noMoreMessages = false; //the purpose of this is to reset load new messages button whenever this button is used
 
         if (empty($this->search)) return;
 
@@ -307,12 +307,13 @@ class Chat extends Component
         $this->matchedIndexes = [];
 
         if (! empty($this->search)) {
-            foreach ($this->messages as $index => $message) {
+            foreach ($this->messages as $message) {
                 if (stripos($message->message, $this->search) !== false) {
-                    $this->matchedIndexes[] = $index;
+                    $this->matchedIndexes[] = $message->id;
                 }
             }
         }
+
 
         $this->searhCount = count($this->matchedIndexes);
 
@@ -376,6 +377,8 @@ class Chat extends Component
         $this->matchedIndexes = [];
         $this->currentMatch   = -1;
 
+        #reset the messages to pevent lag
+        $this->messages =  $this->getMessages();
         # Scroll to latest message
         $this->dispatch('messages-updated');
     }
@@ -575,6 +578,40 @@ class Chat extends Component
     {
         $this->editingMessageId = null;
         $this->editedContent = '';
+    }
+
+    public function goToParentMessage( $messageId){
+
+        $message = Message::findOrFail($messageId);
+
+        $exists = $this->messages->contains('id', $message->parent->id);
+
+
+        if (!$exists) {
+            // Not in the local collection, run the query
+
+            $message = Message::findOrFail($messageId);
+
+            $timestamp = $message->parent ? $message->parent->created_at : $message->created_at;
+
+            $this->messages = Message::where(function ($query) use ($message) {
+                $query->where(function ($q) use ($message) {
+                    $q->where('sender_id', $message->sender_id)
+                    ->where('receiver_id', $message->receiver_id);
+                })->orWhere(function ($q) use ($message) {
+                    $q->where('sender_id', $message->receiver_id)
+                    ->where('receiver_id', $message->sender_id);
+                });
+            })
+            ->where('created_at', '>=', $timestamp)
+            ->orderBy('created_at', 'asc')
+            ->get();
+        }
+
+
+
+        $this->dispatch('scroll-to-message', index: $message->parent->id);
+
     }
 
 }

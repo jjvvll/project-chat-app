@@ -102,8 +102,9 @@
                                             @else
                                                 <div class="{{$isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
                                                                     'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none'}}
-                                                                    w-full px-4 py-2 min-w-0 break-words break-all whitespace-pre-line" text-ellipsis">
-                                                {!! $search ? $this->highlightText($message->message, $search) : nl2br(e($message->message))  !!}
+                                                                  w-full px-4 py-2  [overflow-wrap:anywhere] text-ellipsis">
+                                                {!! $search ? $this->highlightText($message->message, $search) : nl2br(e($message->message)) !!}
+
                                             </div>
                                             @endif
 
@@ -117,7 +118,7 @@
                                             <!-- Message bubble (keep your existing rounded styles) -->
                                             <div class="{{$isSender ? 'bg-indigo-600 rounded-tr-none text-white ' : 'bg-gray-200  rounded-tl-none' }} rounded-lg  p-3 max-w-md ">
                                                 <div class="border-l-2 {{$isSender ? 'border-white ml-1 mr-1 pl-1 pr-1' : 'border-gray-500 ml-1 mr-1 pl-1 pr-1' }} ">
-                                                        <div class="break-all whitespace-pre-wrap">
+                                                        <div class="[overflow-wrap:anywhere] ">
                                                             {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
                                                         </div>
                                                 </div>

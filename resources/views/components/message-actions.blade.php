@@ -16,7 +16,7 @@
     id="message-actions-menu"
 >
     <!-- Trigger -->
-    <div class="cursor-pointe" >
+    <div class="cursor-pointer" >
         {{ $slot }} <!-- This will contain your message content -->
     </div>
 
