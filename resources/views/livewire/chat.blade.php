@@ -104,7 +104,6 @@
                 <div id="message-{{ $message->id }}">
                         @php
                             $isSender = $message->sender->id === auth()->user()->id;
-                            $isImage = str_starts_with($message->file_type, 'image/');
                             $timestamp = $message->created_at->isToday()
                                 ? $message->created_at->diffForHumans()
                                 : ($message->created_at->isCurrentWeek()
@@ -141,7 +140,7 @@
                                     <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null" :index="$index ?? null">
 
                                         <x-message-reactions :message="$message" :isSender="$isSender" >
-                                            <x-message-bubble :message="$message" :isSender="$isSender" :search="$search" :isImage="$isImage"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
+                                            <x-message-bubble :message="$message" :selectedIndices="$selectedIndices ?? null" :isSender="$isSender" :search="$search"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
                                         </x-messsage-reactions>
                                     </x-message-reply-bubble>
                                 {{-- </div> --}}
@@ -214,7 +213,20 @@
                                 <!-- Text input -->
                                 <textarea
                                     autocomplete="off"
-                                    x-data="{ insertNewline() { this.$el.value += '\n';  this.$el.dispatchEvent(new Event('input')); } }"
+                                    x-data="{
+                                                insertNewline() {
+                                                    const el = this.$el;
+                                                    const start = el.selectionStart;
+                                                    const end = el.selectionEnd;
+                                                    const value = el.value;
+
+                                                    el.value = value.slice(0, start) + '\n' + value.slice(end);
+                                                    el.selectionStart = el.selectionEnd = start + 1;
+
+                                                    // Trigger Livewire or Alpine reactivity if needed
+                                                    el.dispatchEvent(new Event('input'));
+                                                }
+                                            }"
 
                                         x-ref="textarea"
                                         x-init="$nextTick(() => {
@@ -241,8 +253,8 @@
                             {{-- Attachment --}}
                             <label title="Attachment" for="fileUpload" class="cursor-pointer flex items-center">
 
-                                <input type="file" id="fileUpload" wire:model="file"
-                                    wire:change="file" class="hidden">
+                                <input type="file" id="fileUpload" wire:model="files" multiple class="hidden">
+
 
                                 <svg class="cursor-pointer" xmlns="http://www.w3.org/2000/svg" width="22"
                                     height="22" viewBox="0 0 22 22" fill="none">
@@ -282,22 +294,89 @@
 
 
                         {{-- File Preview --}}
-                        @if ($file)
-                            <div class="mt-2 p-2 bg-gray-100 rounded-lg flex items-center justify-between">
-                                @php
-                                    $imgType = str_starts_with($file->getMimeType(), 'image/') ? true : false;
-                                @endphp
-                                <span>
-                                    @if ($imgType)
-                                        <img src="{{ $file->temporaryUrl() }}" alt="file"
-                                            class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
-                                    @else
-                                        <span class="w-full max-w-64">{{ $file->getClientOriginalName() }}</span>
-                                    @endif
-                                </span>
-                                <button type="button" wire:click="$set('file', null)"
-                                    class="text-red-500 ms-2"><span class="text-2xl">x</span></button>
+                        @if ($files)
+                            <div x-data="{ showModal: false }">
+                                <!-- Thumbnail previews -->
+                                <div class="flex items-center gap-2">
+                                    @foreach ($files as $index => $file)
+                                        @if ($index < 3)
+                                             @php
+                                                $imgType = str_starts_with($file->getMimeType(), 'image/') ? true : false;
+                                            @endphp
+
+                                            <span>
+                                                @if ($imgType)
+                                                    <img src="{{ $file->temporaryUrl() }}" alt="file"
+                                                        class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
+                                                @else
+                                                    <span class="w-full max-w-64">{{ $file->getClientOriginalName() }}</span>
+                                                @endif
+                                            </span>
+                                        @elseif ($index === 3)
+                                            @php $remaining = count($files) - 3; @endphp
+
+                                            <button
+                                                @click.prevent="showModal = true"
+                                                class="w-16 h-16 bg-gray-200 text-gray-800 rounded flex items-center justify-center text-sm font-semibold shadow"
+                                            >
+                                                +{{ $remaining }}
+                                            </button>
+                                            @break
+                                        @endif
+                                    @endforeach
+                                     <button type="button"  wire:click.prevent="removeFile('all')"
+                                        class="text-red-500 ms-2"><span class="text-2xl">x</span></button>
+                                </div>
+
+                                <!-- Modal -->
+                                <div
+                                    x-show="showModal"
+                                    x-transition
+                                    @keydown.escape.window="showModal = false"
+                                    class="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center"
+                                >
+                                    <div
+                                        @click.prevent.outside="showModal = false"
+                                        class="bg-white max-w-md w-full max-h-[80vh] overflow-y-auto p-4 rounded shadow relative"
+                                    >
+                                        <button
+                                            @click.prevent="showModal = false"
+                                            class="absolute top-2 right-2 text-gray-600 hover:text-black text-xl font-bold"
+                                        >
+                                            &times;
+                                        </button>
+                                        <h2 class="text-lg font-semibold mb-3">All Files</h2>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            @foreach ($files as $index => $file)
+                                                @php
+                                                    $imgType = str_starts_with($file->getMimeType(), 'image/');
+                                                @endphp
+                                                <div class="relative w-20 h-20">
+                                                    @if ($imgType)
+                                                        <img src="{{ $file->temporaryUrl() }}" alt="file"
+                                                            class="w-full h-full rounded-lg object-cover border border-gray-300 shadow-md" />
+                                                    @else
+                                                        <div class="text-xs text-gray-700 truncate border rounded p-2 bg-white shadow w-full h-full flex items-center justify-center">
+                                                            📄 {{ $file->getClientOriginalName() }}
+                                                        </div>
+                                                    @endif
+
+                                                    <!-- X button -->
+                                                    <button
+                                                        wire:click.prevent="removeFile({{ $index }})"
+                                                        class="absolute top-0 right-0 bg-white rounded-full text-xs text-red-600 hover:text-white hover:bg-red-500 w-5 h-5 flex items-center justify-center shadow -mt-1 -mr-1"
+                                                        title="Remove"
+                                                    >
+                                                        &times;
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                    </div>
+                                </div>
                             </div>
+
                         @endif
                     </div>
                 </form>

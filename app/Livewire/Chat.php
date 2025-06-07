@@ -16,6 +16,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Imagick;
 
 
 
@@ -32,6 +33,7 @@ class Chat extends Component
     public $messages;
 
     public $file;
+    public $files  = [];
     public $lastMessageTimestamp;
     public $noMoreMessages;
 
@@ -47,6 +49,7 @@ class Chat extends Component
     public $forwardMessageId;
     public $editingMessageId = null;
     public $editedContent = '';
+    public array $selectedIndices = [];
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -80,12 +83,12 @@ class Chat extends Component
 
     public function sendMessage(){
 
-        if (empty($this->message) && empty($this->file)) {
+        if (empty($this->message) && empty($this->files)) {
             return; // Do nothing if the message is empty
         }
 
         $sentMessage = $this->saveMessage();
-
+        $this->files = []; //empty the files
         // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($sentMessage);
 
@@ -224,26 +227,41 @@ class Chat extends Component
 
         // dd($this->replyingTo);
 
-        if (empty($this->message) && empty($this->file)) {
-            return; // Do nothing if the message is empty
+        if (empty($this->message) && empty($this->files)) {
+            return; // Do nothing if message and files are empty
         }
 
-       if($this->file){
+        if ($this->files && is_array($this->files)) {
+            $fileNames = [];
+            $fileOriginalNames = [];
+            $folderPaths = [];
+            $fileTypes = [];
+            $thumbnailPath = [];
 
-            $fileName = $this->file->hashName();
-            $fileOriginalName = $this->file->getClientOriginalName();
-            $folder_path = $this->file->store('chat_files', 'public');
-            $fileType = $this->file->getMimeType();
-       }
+            foreach ($this->files as $index => $file) {
+                $fileNames[] = $file->hashName();
+                $fileOriginalNames[] = $file->getClientOriginalName();
+                $folderPaths[] = $file->store('chat_files', 'public');
+                $fileTypes[] = $file->getMimeType();
+
+                //convert that to a full path for Imagick:
+                $fullPath = storage_path('app/public/' . $folderPaths[$index]);
+
+                // Then pass $fullPath to your generateThumbnail function:
+                $thumbnailPath[] = $this->generateThumbnail($fullPath);
+
+            }
+        }
 
         return Message::create([
         'sender_id' =>  $this->senderId ,
         'receiver_id' =>   $this->receiverId,
         'message' =>  $this->message,
-        'file_name' => $fileName ?? null,
-        'file_original_name' => $fileOriginalName ?? null,
-        'folder_path' => $folder_path ?? null,
-        'file_type' =>  $fileType ?? null,
+        'file_name' => isset($fileNames) ? json_encode($fileNames) : null,
+        'file_original_name' => isset($fileOriginalNames) ? json_encode($fileOriginalNames) : null,
+        'folder_path' => isset($folderPaths) ? json_encode($folderPaths) : null,
+        'file_type' => isset($fileTypes) ? json_encode($fileTypes) : null,
+        'thumbnail_path' => isset($thumbnailPath) ? json_encode($thumbnailPath) : null,
         'is_read' => false,
         'parent_id' => $this->replyingTo['id'] ?? null]);
 
@@ -524,61 +542,6 @@ class Chat extends Component
 
 
 
-    public function editMessage($messageId, $currentContent)
-    {
-        $this->editingMessageId = $messageId;
-        $this->editedContent = $currentContent;
-
-        // $working = Message::find(707); // A message where edit works
-        // $broken = Message::find(708); // Your problematic message
-
-        // // Output all differences
-        // dd([
-        //     'diff' => array_diff_assoc($broken->toArray(), $working->toArray()),
-        //     'is_forwarded_type' => [
-        //         'working' => gettype($working->is_forwarded),
-        //         'broken' => gettype($broken->is_forwarded)
-        //     ]
-        // ]);
-
-    }
-
-    public function saveEditedMessage()
-    {
-        $editedMessage = Message::findOrFail((int)$this->editingMessageId);
-        $editedMessage->update(['message' => $this->editedContent]);
-
-    // Update the message in the local Livewire collection
-                if ($this->messages instanceof \Illuminate\Support\Collection) {
-                    // If it's a Collection
-                    $this->messages = $this->messages->map(function ($msg) use ($editedMessage) {
-                        return $msg->id === $editedMessage->id ? $editedMessage : $msg;
-                    });
-                } else {
-                    // If it's an array
-                    foreach ($this->messages as $i => $msg) {
-                        if ($msg['id'] === $editedMessage->id) {
-                            $this->messages[$i] = $editedMessage   ;
-                            break;
-                        }
-                    }
-                }
-           #broascast the message
-        broadcast(event: new listenEditedMessage($editedMessage));
-
-        $this->cancelEdit();
-    }
-
-
-        #[On('echo-private:EditedMessage-channel.{senderId}.{receiverId},listenEditedMessage')]
-        public function listenEditedMessage($event){
-            ///listen for reaction update in a message
-        }
-    public function cancelEdit()
-    {
-        $this->editingMessageId = null;
-        $this->editedContent = '';
-    }
 
     public function goToParentMessage( $messageId){
 
@@ -613,5 +576,237 @@ class Chat extends Component
         $this->dispatch('scroll-to-message', index: $message->parent->id);
 
     }
+
+public function removeFile($index = null)
+{
+    if ($index === 'all') {
+        $this->files = [];
+    } elseif (is_numeric($index) && isset($this->files[$index])) {
+        unset($this->files[$index]);
+        $this->files = array_values($this->files); // reindex array
+    }
+}
+
+public function generateThumbnail($filePath)
+{
+    $thumbnailDir = storage_path('app/public/chat_files/thumbnails/');
+
+    if (!file_exists($thumbnailDir)) {
+        mkdir($thumbnailDir, 0775, true);
+    }
+
+    $imagick = new \Imagick();
+
+    try {
+        $filenameWithoutExt = pathinfo($filePath, PATHINFO_FILENAME);
+        $extension = strtolower($filenameWithoutExt);
+
+        if ($extension === 'pdf') {
+            $imagick->setResolution(150, 150); // For better PDF quality
+            $imagick->readImage($filePath . '[0]'); // Only first page
+        } else {
+            $imagick->readImage($filePath);
+        }
+
+        $imagick->setImageFormat('jpeg');
+        $imagick->thumbnailImage(150, 150, true);
+
+        $thumbnailFilename = basename($filenameWithoutExt) . '.jpg';
+
+        // Full physical path to save the image
+        $thumbnailFullPath = storage_path('app/public/chat_files/thumbnails/' . $thumbnailFilename);
+
+        $imagick->writeImage($thumbnailFullPath);
+
+
+
+        $imagick->clear();
+        $imagick->destroy();
+
+        return 'storage/chat_files/thumbnails/' . $thumbnailFilename;
+
+    } catch (\Exception $e) {
+        logger()->error('Thumbnail generation failed: ' . $e->getMessage());
+        return null;
+    }
+}
+
+
+      public function editMessage($messageId, $currentContent)
+    {
+        $this->editingMessageId = $messageId;
+        $this->editedContent = $currentContent;
+
+        // $working = Message::find(707); // A message where edit works
+        // $broken = Message::find(708); // Your problematic message
+
+        // // Output all differences
+        // dd([
+        //     'diff' => array_diff_assoc($broken->toArray(), $working->toArray()),
+        //     'is_forwarded_type' => [
+        //         'working' => gettype($working->is_forwarded),
+        //         'broken' => gettype($broken->is_forwarded)
+        //     ]
+        // ]);
+
+    }
+
+    public function saveEditedMessage()
+    {
+        $editedMessage = Message::findOrFail((int)$this->editingMessageId);
+
+        if(!empty($this->selectedIndices)){
+            $this->removeImage($editedMessage);
+        }else{
+             $editedMessage->update(['message' => $this->editedContent]);
+
+                // Update the message in the local Livewire collection
+                if ($this->messages instanceof \Illuminate\Support\Collection) {
+                    // If it's a Collection
+                    $this->messages = $this->messages->map(function ($msg) use ($editedMessage) {
+                        return $msg->id === $editedMessage->id ? $editedMessage : $msg;
+                    });
+                } else {
+                    // If it's an array
+                    foreach ($this->messages as $i => $msg) {
+                        if ($msg['id'] === $editedMessage->id) {
+                            $this->messages[$i] = $editedMessage   ;
+                            break;
+                        }
+                    }
+                }
+            #broascast the message
+            broadcast(event: new listenEditedMessage($editedMessage));
+
+        }
+
+
+
+
+        $this->cancelEdit();
+    }
+
+
+    #[On('echo-private:EditedMessage-channel.{senderId}.{receiverId},listenEditedMessage')]
+    public function listenEditedMessage($event){
+            ///listen for reaction update in a message
+        }
+    public function cancelEdit()
+    {
+        $this->editingMessageId = null;
+        $this->editedContent = '';
+        $this->selectedIndices = [];
+    }
+
+    public function toggleSelectedIndex($index)
+    {
+        if (($key = array_search($index, $this->selectedIndices)) !== false) {
+            unset($this->selectedIndices[$key]);
+        } else {
+            $this->selectedIndices[] = $index;
+        }
+
+        // Optional: reindex the array to keep it clean
+        $this->selectedIndices = array_values($this->selectedIndices);
+    }
+   public function removeImage( Message $message)
+    {
+        // $message = Message::findOrFail($messageId);
+
+        // Decode JSON arrays from DB
+        $fileNames = json_decode($message->file_name, true) ?: [];
+        $fileOriginalNames = json_decode($message->file_original_name, true) ?: [];
+        $folderPaths = json_decode($message->folder_path, true) ?: [];
+        $fileTypes = json_decode($message->file_type, true) ?: [];
+        $thumbnailPaths = json_decode($message->thumbnail_path, true) ?: [];
+
+        // Sort indices descending to safely remove by index without messing up offsets
+        rsort($this->selectedIndices);
+
+        foreach ($this->selectedIndices as $index) {
+            if (!isset($fileNames[$index])) {
+                continue; // skip invalid index
+            }
+
+            // Get filenames and paths
+            // $fileName = $fileNames[$index];
+            $folderPath = $folderPaths[$index] ?? null;
+            $thumbnailPath = $thumbnailPaths[$index] ?? null;
+
+            // Construct destination folder for deleted files
+            $toBeDeletedFolder = storage_path('app/public/toBeDeleted');
+
+            if (!file_exists($toBeDeletedFolder)) {
+                mkdir($toBeDeletedFolder, 0755, true);
+            }
+
+            // Build new filename: owner_createdAt_date_originalName.ext
+            // Assuming $message has owner info and created_at property
+            $ownerName = $message->sender->name ?? 'owner'; // Adjust as needed
+            $dateStr = $message->created_at->format('Ymd_His');
+
+            // Rename and move original file if it exists
+            if ($folderPath && file_exists(storage_path("app/public/{$folderPath}"))) {
+                $newFileName = "{$ownerName}_{$dateStr}_" . basename($folderPath);
+                rename(storage_path("app/public/{$folderPath}"), "{$toBeDeletedFolder}/{$newFileName}");
+            }
+
+            $relativePath = str_replace('storage/', '', $thumbnailPath);
+
+            // Rename and move thumbnail file if it exists
+            if ($thumbnailPath && file_exists(storage_path('app/public/' . $relativePath))) {
+                $newThumbName = "{$ownerName}_{$dateStr}_" . basename($thumbnailPath);
+                rename(storage_path('app/public/' . $relativePath), "{$toBeDeletedFolder}/{$newThumbName}");
+            }
+
+            // Remove the entries from arrays
+            unset($fileNames[$index]);
+            unset($fileOriginalNames[$index]);
+            unset($folderPaths[$index]);
+            unset($fileTypes[$index]);
+            unset($thumbnailPaths[$index]);
+        }
+
+        // Reindex arrays so json_encode stores them correctly
+        $fileNames = array_values($fileNames);
+        $fileOriginalNames = array_values($fileOriginalNames);
+        $folderPaths = array_values($folderPaths);
+        $fileTypes = array_values($fileTypes);
+        $thumbnailPaths = array_values($thumbnailPaths);
+
+        // Update the message record with the new JSON arrays
+        $message->update([
+            'message' => $this->editedContent,
+            'file_name' => !empty($fileNames) ? json_encode($fileNames) : null,
+            'file_original_name' => !empty($fileOriginalNames) ? json_encode($fileOriginalNames) : null,
+            'folder_path' => !empty($folderPaths) ? json_encode($folderPaths) : null,
+            'file_type' => !empty($fileTypes) ? json_encode($fileTypes) : null,
+            'thumbnail_path' => !empty($thumbnailPaths) ? json_encode($thumbnailPaths) : null,
+        ]);
+
+
+             $updatedMessage = Message::withTrashed()->find($message->id);
+
+                // Update the message in the local Livewire collection
+                if ($this->messages instanceof \Illuminate\Support\Collection) {
+                    // If it's a Collection
+                    $this->messages = $this->messages->map(function ($msg) use ($updatedMessage) {
+                        return $msg->id === $updatedMessage->id ? $updatedMessage : $msg;
+                    });
+                } else {
+                    // If it's an array
+                    foreach ($this->messages as $i => $msg) {
+                        if ($msg['id'] === $updatedMessage->id) {
+                            $this->messages[$i] = $updatedMessage   ;
+                            break;
+                        }
+                    }
+                }
+
+
+                broadcast(event: new MessageDeleted($updatedMessage)); //same purpose, send an event to update message bubble of the receiver
+    }
+
+
 
 }

@@ -1,4 +1,4 @@
-                                    @if (!$message->deleted_at)
+                            @if (!$message->deleted_at)
                                         @if (($message->message || $message->file_name) && $message->is_forwarded)
                                             <div class="text-xs italic text-black-500 mb-1">
                                                 @if ($isSender)
@@ -9,7 +9,7 @@
                                             </div>
                                         @endif
 
-                               @if ($message->message && !$message->is_forwarded)
+                                @if ($message->message && !$message->is_forwarded)
                                         {{-- <p>{{ var_dump($editingMessageId) }} | {{ var_dump($message->id) }}</p> --}}
                                             @if ((int)$editingMessageId === $message->id)
                                                 <p class="text-xs text-red-500"> Editing Message ID: {{ $editingMessageId }}</p>
@@ -87,18 +87,6 @@
                                                         rows="1"
                                                     ></textarea>
 
-                                                    <div class="flex gap-2 mt-2">
-                                                        <button wire:click="saveEditedMessage" >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button wire:click="cancelEdit" >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
                                             @else
                                                 <div class="{{$isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
                                                                     'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none'}}
@@ -107,9 +95,7 @@
 
                                             </div>
                                             @endif
-
-
-                                        @elseif ($message->message)
+                                @elseif ($message->message)
 
 
                                             <!-- Left indicator line -->
@@ -126,54 +112,167 @@
                                             </div>
 
 
-                                        @endif
+                                @endif
 
-                                        @if ($message->file_name)
-                                            @if ($isImage)
-                                                <div x-data="{ open: false }">
-                                                    <img
-                                                        @click="open = true"
-                                                        src="{{ asset('storage/'.$message->folder_path) }}"
-                                                        alt="Image"
-                                                        class="w-30 h-20 rounded-lg object-cover border cursor-pointer hover:opacity-90 mt-2 {{$isSender ?  'ml-auto' : 'mr-auto' }}"
-                                                    >
 
-                                                    <div
-                                                        x-show="open"
-                                                        @click.away="open = false"
-                                                        x-cloak
-                                                        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
-                                                    >
-                                                        <div class="relative max-w-4xl max-h-[90vh]">
-                                                            <img
-                                                                src="{{ asset('storage/'.$message->folder_path) }}"
-                                                                alt="Full view"
-                                                                class="max-w-full max-h-[80vh] object-contain"
-                                                            >
-                                                            <button
-                                                                @click="open = false"
-                                                                class="absolute top-4 right-4 text-black text-2xl hover:text-gray-300"
-                                                            >
-                                                                ✕
-                                                            </button>
+                                    @php
+                                        $folderPaths = json_decode($message->folder_path, true);
+                                        $originalNames = json_decode($message->file_original_name, true);
+                                        $thumbnails = json_decode($message->thumbnail_path, true);
+                                    @endphp
+
+                                <div class="{{ ( is_array($folderPaths) && count($folderPaths) > 1 )? 'flex flex-wrap gap-1 mt-2 p-4 rounded ' .
+                                            ($isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
+                                                                    'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none') : '' }}"
+>
+                                        @if (is_array($folderPaths) && is_array($originalNames))
+
+                                            @foreach( $folderPaths as $index => $folderPath)
+
+                                            @php
+                                                strpos(mime_content_type('storage/'.$folderPath), 'image/') === 0 ? $isImage = true : $isImage = false
+                                            @endphp
+
+                                                @php
+                                                    $originalName = $originalNames[$index] ?? 'Unknown';
+                                                     $thumbnail = $thumbnails[$index] ?? 'Unknown';
+                                                @endphp
+
+                                                @if ((int)$editingMessageId === $message->id)
+                                                   <div class="relative">
+                                                        @if (in_array($index, $selectedIndices))
+                                                                     <div
+                                                                    class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" ></div>
+                                                        @else
+                                                                @if ($isImage)
+                                                                    <img src="{{ asset($thumbnail) }}"
+                                                                    alt="file"
+                                                                    class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" />
+                                                                @else
+                                                                        @php
+                                                                            $fullPath = storage_path('app/public/' . $folderPath);
+                                                                            $mimeType = file_exists($fullPath) ? mime_content_type($fullPath) : '';
+                                                                        @endphp
+
+                                                                        <div class="w-24 h-24 object-cover border cursor-pointer hover:opacity-90 mt-2 bg-gray-300 {{ $isSender ? 'text-white' : 'text-black' }}">
+                                                                                @if($mimeType === 'application/pdf')
+                                                                                    <img src="{{ asset($thumbnail) }}"
+                                                                                        alt="File preview" class="w-full h-full object-cover rounded" />
+                                                                                @elseif(in_array($mimeType, ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']))
+                                                                                    <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
+                                                                                        📄 DOC File
+                                                                                    </div>
+                                                                                @else
+                                                                                    <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
+                                                                                        📎 Unknown File
+                                                                                    </div>
+                                                                                @endif
+
+                                                                                <span class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs text-center p-1 truncate"
+                                                                                    title="{{ $originalName }}">
+                                                                                    {{ $originalName }}
+                                                                                </span>
+                                                                    </div>
+                                                                @endif
+                                                        @endif
+                                                        <button type="button"
+                                                                        wire:click="toggleSelectedIndex({{$index}})"
+                                                                        class="absolute top-0 right-0 text-red-500 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow -translate-y-1/2 translate-x-1/2">
+                                                                    <span class="text-xs font-bold">x</span>
+                                                                </button>
+                                                   </div>
+                                                @else
+                                                    @if ($isImage)
+                                                    <div x-data="{ open: false }">
+                                                        <img
+                                                            @click="open = true"
+                                                            src="{{ asset($thumbnail) }}"
+                                                            alt="Image"
+                                                            class="{{( is_array($folderPaths) && count($folderPaths) > 1 ) ? 'w-24 h-24' : 'w-30 h-30'}} object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2 {{$isSender ?  'ml-auto' : 'mr-auto' }}"
+                                                        >
+                                                        <div
+                                                            x-show="open"
+                                                            @click.away="open = false"
+                                                            x-cloak
+                                                            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
+                                                        >
+                                                            <div class="relative max-w-4xl max-h-[90vh]">
+                                                                <img
+                                                                    src="{{ asset('storage/'.$folderPath) }}"
+                                                                    alt="Full view"
+                                                                    class="max-w-full max-h-[80vh] object-contain"
+                                                                >
+                                                                <button
+                                                                    @click="open = false"
+                                                                    class="absolute top-4 right-4 text-black text-2xl hover:text-gray-300"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                            @else
+                                                    @else
+                                                        @php
+                                                            $fullPath = storage_path('app/public/' . $folderPath);
+                                                            $mimeType = file_exists($fullPath) ? mime_content_type($fullPath) : '';
+                                                        @endphp
 
-                                                    <a href="{{ asset('storage/' . $message->folder_path) }}"
-                                                        download
-                                                        class="flex items-center gap-2 mt-2 px-3 py-2 rounded text-sm break-words
-                                                        {{ $isSender ? 'bg-indigo-600 text-white' : 'bg-gray-200  text-black' }}">
-                                                        📎 {{ $message->file_original_name }}
-                                                    </a>
+                                                        <div class="mt-2">
+                                                            <a href="{{ asset('storage/' . $folderPath) }}"
+                                                            download
+                                                            class="flex flex-col items-start gap-2 px-3 py-2 rounded text-sm bg-gray-300 relative w-24 h-24 overflow-hidden border {{ $isSender ? 'text-white' : 'text-black' }}">
 
-                                            @endif
+
+
+                                                                    @if($mimeType === 'application/pdf')
+                                                                        <img src="{{ asset($thumbnail) }}"
+                                                                            alt="File preview" class="w-full h-full object-cover rounded" />
+                                                                    @elseif(in_array($mimeType, ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']))
+                                                                        <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
+                                                                            📄 DOC File
+                                                                        </div>
+                                                                    @else
+                                                                        <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
+                                                                            📎 Unknown File
+                                                                        </div>
+                                                                    @endif
+
+                                                                    <span class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs text-center p-1 truncate"
+                                                                        title="{{ $originalName }}">
+                                                                        {{ $originalName }}
+                                                                    </span>
+
+
+                                                            </a>
+                                                        </div>
+
+
+                                                    @endif
+                                                @endif
+
+                                            @endforeach
                                         @endif
-                                    @else
-                                           <div
-                                                class="bg-transparent border border-gray-300 text-gray-600 rounded-3xl px-4 py-2 break-words">
-                                                <em class="text-sm text-gray-400">This message has been deleted</em>
-                                            </div>
-                                    @endif
+
+                                </div>
+                                @if ((int)$editingMessageId === $message->id)
+                                             <div class="flex gap-2 mt-2">
+                                                        <button wire:click="saveEditedMessage" >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button wire:click="cancelEdit" >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                        @endif
+
+                            @else
+                                            <div
+                                                    class="bg-transparent border border-gray-300 text-gray-600 rounded-3xl px-4 py-2 break-words">
+                                                    <em class="text-sm text-gray-400">This message has been deleted</em>
+                                                </div>
+                            @endif

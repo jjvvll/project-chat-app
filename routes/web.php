@@ -33,3 +33,8 @@ Route::post('/broadcast-typing', function (Request $request) {
     broadcast(new UserTyping($request->sender_id, $request->receiver_id))->toOthers();
     return response()->noContent();
 });
+
+Route::get('/test-imagick', function () {
+    $imagick = new \Imagick();
+    dd($imagick->getVersion());
+});

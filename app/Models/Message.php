@@ -22,8 +22,16 @@ class Message extends Model
         'reaction',
         'is_deleted',
         'parent_id',
-        'is_forwarded'
+        'is_forwarded',
+        'thumbnail_path'
 
+    ];
+    protected $casts = [
+    'file_name' => 'array',
+    'file_original_name' => 'array',
+    'folder_path' => 'array',
+    'file_type' => 'array',
+    'thumbnail_path' => 'array'
     ];
 
     public function sender()  {
