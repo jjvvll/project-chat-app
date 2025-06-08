@@ -20,7 +20,6 @@ use Imagick;
 
 
 
-
 class Chat extends Component
 {
     use WithFileUploads;
@@ -504,33 +503,61 @@ class Chat extends Component
 
         $message = Message::findOrFail($this->forwardMessageId);
 
-        $originalPath = $message->folder_path; // already includes filename
-       if($originalPath){
-            $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+        // Decode JSON arrays from DB
+        // $fileNames = json_decode($message->file_name, true) ?: [];
+        $fileOriginalNames = json_decode($message->file_original_name, true) ?: [];
+        $folderPaths = json_decode($message->folder_path, true) ?: [];
+        // $fileTypes = json_decode($message->file_type, true) ?: [];
+        $thumbnailPaths = json_decode($message->thumbnail_path, true) ?: [];
 
-            // Generate a new file name (e.g., with unique ID or timestamp)
-            $newFileName = 'copy_' . Str::random(8) . '.' . $extension;
-            $newFilePath = 'chat_files/' . $newFileName;
+        $newFileNames = [];
+        $newFilePaths = [];
+        $newThumbnailFilePath  = [];
 
-            // Copy the file
-            if (Storage::disk('public')->exists($originalPath)) {
-            Storage::disk('public')->copy($originalPath, $newFilePath);
+       if($folderPaths){
+            foreach($folderPaths as $index => $folderpath){
 
+
+                $extension = pathinfo($folderpath, PATHINFO_EXTENSION);
+
+                // Generate a new file name (e.g., with unique ID or timestamp)
+                $newFileNames[$index] = 'copy_' . Str::random(8) . '_' . pathinfo($fileOriginalNames[$index], PATHINFO_FILENAME) . '.' . $extension;
+                $newFilePaths[$index] = 'chat_files/' . $newFileNames[$index];
+
+                $thumbnailExtension = pathinfo($thumbnailPaths[$index], PATHINFO_EXTENSION);
+
+                $newThumbnailName = pathinfo($newFileNames[$index], PATHINFO_FILENAME) . '_thumb.' . $thumbnailExtension;
+                $newThumbnailFilePath[$index] = 'chat_files/thumbnails/' . $newThumbnailName;
+
+                $relativePath = str_replace(storage_path('app/public/storage/') . DIRECTORY_SEPARATOR, '', $thumbnailPaths[$index]);
+
+                // Remove the 'storage/' prefix if it exists
+                if (str_starts_with($relativePath, 'storage/')) {
+                    $relativePath = substr($relativePath, strlen('storage/'));
+                }
+
+                // Copy the file
+                if (Storage::disk('public')->exists($folderpath) && Storage::disk('public')->exists($relativePath) ) {
+                    Storage::disk('public')->copy($folderpath, $newFilePaths[$index]);
+                    Storage::disk('public')->copy($relativePath,  $newThumbnailFilePath[$index]);
+                }
+            }
         }
-       }
 
         // Create the new message
         $sentMessage = Message::create([
             'sender_id' => $this->senderId,
             'receiver_id' => $recipientId,
             'message' => $message->message,
-            'file_name' => $newFileName ?? null,
+            'file_name' => !empty($newFileNames) ? json_encode($newFileNames) : null,
             'file_original_name' => $message->file_original_name,
-            'folder_path' => $newFilePath ?? null, // this is full path: chat_files/filename
+            'folder_path' => !empty($newFilePaths) ? json_encode($newFilePaths) : null,
+            'thumbnail_path' => !empty($newThumbnailFilePath) ? json_encode($newThumbnailFilePath) : null,
             'file_type' => $message->file_type,
             'is_read' => false,
             'is_forwarded' => true,
         ]);
+
         #broascast the message
         broadcast(event: new MessageSentEvent($sentMessage));
 
@@ -655,33 +682,7 @@ public function generateThumbnail($filePath)
     {
         $editedMessage = Message::findOrFail((int)$this->editingMessageId);
 
-        if(!empty($this->selectedIndices)){
-            $this->removeImage($editedMessage);
-        }else{
-             $editedMessage->update(['message' => $this->editedContent]);
-
-                // Update the message in the local Livewire collection
-                if ($this->messages instanceof \Illuminate\Support\Collection) {
-                    // If it's a Collection
-                    $this->messages = $this->messages->map(function ($msg) use ($editedMessage) {
-                        return $msg->id === $editedMessage->id ? $editedMessage : $msg;
-                    });
-                } else {
-                    // If it's an array
-                    foreach ($this->messages as $i => $msg) {
-                        if ($msg['id'] === $editedMessage->id) {
-                            $this->messages[$i] = $editedMessage   ;
-                            break;
-                        }
-                    }
-                }
-            #broascast the message
-            broadcast(event: new listenEditedMessage($editedMessage));
-
-        }
-
-
-
+      $this->removeImage($editedMessage);
 
         $this->cancelEdit();
     }
@@ -719,8 +720,7 @@ public function generateThumbnail($filePath)
         $folderPaths = json_decode($message->folder_path, true) ?: [];
         $fileTypes = json_decode($message->file_type, true) ?: [];
         $thumbnailPaths = json_decode($message->thumbnail_path, true) ?: [];
-
-        // Sort indices descending to safely remove by index without messing up offsets
+            // Sort indices descending to safely remove by index without messing up offsets
         rsort($this->selectedIndices);
 
         foreach ($this->selectedIndices as $index) {
@@ -765,24 +765,28 @@ public function generateThumbnail($filePath)
             unset($folderPaths[$index]);
             unset($fileTypes[$index]);
             unset($thumbnailPaths[$index]);
-        }
+            }
 
-        // Reindex arrays so json_encode stores them correctly
-        $fileNames = array_values($fileNames);
-        $fileOriginalNames = array_values($fileOriginalNames);
-        $folderPaths = array_values($folderPaths);
-        $fileTypes = array_values($fileTypes);
-        $thumbnailPaths = array_values($thumbnailPaths);
+            // Reindex arrays so json_encode stores them correctly
+            $fileNames = array_values($fileNames);
+            $fileOriginalNames = array_values($fileOriginalNames);
+            $folderPaths = array_values($folderPaths);
+            $fileTypes = array_values($fileTypes);
+            $thumbnailPaths = array_values($thumbnailPaths);
 
-        // Update the message record with the new JSON arrays
-        $message->update([
-            'message' => $this->editedContent,
-            'file_name' => !empty($fileNames) ? json_encode($fileNames) : null,
-            'file_original_name' => !empty($fileOriginalNames) ? json_encode($fileOriginalNames) : null,
-            'folder_path' => !empty($folderPaths) ? json_encode($folderPaths) : null,
-            'file_type' => !empty($fileTypes) ? json_encode($fileTypes) : null,
-            'thumbnail_path' => !empty($thumbnailPaths) ? json_encode($thumbnailPaths) : null,
-        ]);
+            // Update the message record with the new JSON arrays
+            $message->update([
+                'message' => $this->editedContent ?? null,
+                'file_name' => !empty($fileNames) ? json_encode($fileNames) : null,
+                'file_original_name' => !empty($fileOriginalNames) ? json_encode($fileOriginalNames) : null,
+                'folder_path' => !empty($folderPaths) ? json_encode($folderPaths) : null,
+                'file_type' => !empty($fileTypes) ? json_encode($fileTypes) : null,
+                'thumbnail_path' => !empty($thumbnailPaths) ? json_encode($thumbnailPaths) : null,
+            ]);
+
+            if(empty($this->editedContent) && empty($fileNames)){
+                $message->delete();
+            }
 
 
              $updatedMessage = Message::withTrashed()->find($message->id);

@@ -1,10 +1,10 @@
                             @if (!$message->deleted_at)
-                                        @if (($message->message || $message->file_name) && $message->is_forwarded)
-                                            <div class="text-xs italic text-black-500 mb-1">
+                                        @if (($message->message) && $message->is_forwarded)
+                                            <div class="text-sm italic text-gray-500 my-2">
                                                 @if ($isSender)
-                                                    <div class="text-right text-xs text-gray-500 mb-1">You forwarded a message</div>
+                                                    <div class="text-right">You forwarded a message</div>
                                                 @else
-                                                        <div class="text-left text-xs text-gray-500 mb-1">Forwarded</div>
+                                                        <div class="text-left">  {{$message->sender->name}} forwarded a message</div>
                                                 @endif
                                             </div>
                                         @endif
@@ -121,12 +121,21 @@
                                         $thumbnails = json_decode($message->thumbnail_path, true);
                                     @endphp
 
+                                            @if (is_array($folderPaths) && $message->is_forwarded && $isSender)
+                                                <p class="text-sm italic text-gray-500 text-right my-2">
+                                                    You forwarded {{ count($folderPaths) === 1 ? 'an image/file' : 'images/files' }}.
+                                                </p>
+                                            @elseif (is_array($folderPaths)  && $message->is_forwarded )
+                                                 <p class="text-sm italic text-gray-500 text-left my-2">
+                                                    {{$message->sender->name}} forwarded {{ count($folderPaths) === 1 ? 'an image/file' : 'images/files' }}.
+                                                </p>
+                                            @endif
+
                                 <div class="{{ ( is_array($folderPaths) && count($folderPaths) > 1 )? 'flex flex-wrap gap-1 mt-2 p-4 rounded ' .
                                             ($isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
                                                                     'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none') : '' }}"
 >
                                         @if (is_array($folderPaths) && is_array($originalNames))
-
                                             @foreach( $folderPaths as $index => $folderPath)
 
                                             @php
@@ -186,7 +195,7 @@
                                                     <div x-data="{ open: false }">
                                                         <img
                                                             @click="open = true"
-                                                            src="{{ asset($thumbnail) }}"
+                                                            src="{{ $message->is_forwarded ? asset('storage/'. $thumbnail) : asset($thumbnail) }}"
                                                             alt="Image"
                                                             class="{{( is_array($folderPaths) && count($folderPaths) > 1 ) ? 'w-24 h-24' : 'w-30 h-30'}} object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2 {{$isSender ?  'ml-auto' : 'mr-auto' }}"
                                                         >
@@ -226,7 +235,7 @@
 
 
                                                                     @if($mimeType === 'application/pdf')
-                                                                        <img src="{{ asset($thumbnail) }}"
+                                                                        <img src="{{ asset($message->is_forwarded ? asset('storage/'. $thumbnail) : asset($thumbnail)) }}"
                                                                             alt="File preview" class="w-full h-full object-cover rounded" />
                                                                     @elseif(in_array($mimeType, ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']))
                                                                         <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
@@ -252,6 +261,7 @@
                                                 @endif
 
                                             @endforeach
+
                                         @endif
 
                                 </div>

@@ -309,7 +309,10 @@
                                                     <img src="{{ $file->temporaryUrl() }}" alt="file"
                                                         class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
                                                 @else
-                                                    <span class="w-full max-w-64">{{ $file->getClientOriginalName() }}</span>
+
+                                                    <span class="w-full max-w-64 bg-gray-100">
+                                                        {{ Str::limit($file->getClientOriginalName(), 5) }}
+                                                    </span>
                                                 @endif
                                             </span>
                                         @elseif ($index === 3)
