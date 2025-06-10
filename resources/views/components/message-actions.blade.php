@@ -1,18 +1,30 @@
 <div
-       x-data="{
+    x-data="{
         id: {{ $message->id }},
+        x: 0,
+        y: 0,
         get showActions() {
             return $store.dropdown.openId === this.id
         },
-        toggleActions() {
-            $store.dropdown.openId = (this.showActions ? null : this.id)
+        toggleActions(event) {
+            $store.dropdown.openId = this.id;
+
+            if (event) {
+                this.x = event.clientX;
+                this.y = event.clientY;
+            }
+        },
+        closeMenu() {
+            if (this.showActions) {
+                $store.dropdown.openId = null;
+            }
         }
     }"
-
-    @contextmenu.prevent="toggleActions"
-    @click.away="$store.dropdown.openId = null"
-
-    class="grid gap-1 relative group items-center "
+    @contextmenu.prevent="toggleActions($event)"
+    @click.away="closeMenu()"
+@wheel.window="closeMenu()"
+    @click.window="closeMenu()"
+    class="grid gap-1 relative group items-center"
     id="message-actions-menu"
 >
     <!-- Trigger -->
@@ -22,19 +34,17 @@
 
     <!-- Actions Menu -->
     @if (is_null($message->deleted_at))
-    <div
+       <div
         x-show="showActions"
-        x-transition:enter="transition ease-out duration-100"-
+        x-transition:enter="transition ease-out duration-100"
         x-transition:enter-start="opacity-0 scale-95"
         x-transition:enter-end="opacity-100 scale-100"
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-
         x-data="{ isSender: {{ json_encode($isSender) }} }"
-        x-bind:class="isSender ? 'right-0' : 'left-0'"
-        class="absolute z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1"
-
+        class="fixed z-50 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1"
+        :style="`top: ${y}px; left: ${x}px;`"
     >
         <button
             wire:click="startReply({{ $message->id }},  @js($message->message))"

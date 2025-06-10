@@ -297,14 +297,14 @@
                         @if ($files)
                             <div x-data="{ showModal: false }">
                                 <!-- Thumbnail previews -->
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 relative">
                                     @foreach ($files as $index => $file)
                                         @if ($index < 3)
                                              @php
                                                 $imgType = str_starts_with($file->getMimeType(), 'image/') ? true : false;
                                             @endphp
 
-                                            <span>
+                                            <div class="relative">
                                                 @if ($imgType)
                                                     <img src="{{ $file->temporaryUrl() }}" alt="file"
                                                         class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
@@ -314,19 +314,26 @@
                                                         {{ Str::limit($file->getClientOriginalName(), 5) }}
                                                     </span>
                                                 @endif
-                                            </span>
+                                                           <button
+                                                        wire:click.prevent="removeFile({{ $index }})"
+                                                        class="absolute top-0 right-0 bg-white rounded-full text-xs text-red-600 hover:text-white hover:bg-red-500 w-5 h-5 flex items-center justify-center shadow -mt-1 -mr-1"
+                                                        title="Remove"
+                                                    >
+                                                        &times;
+                                                    </button>
+                                                </div>
+
+
                                         @elseif ($index === 3)
                                             @php $remaining = count($files) - 3; @endphp
-
-                                            <button
-                                                @click.prevent="showModal = true"
-                                                class="w-16 h-16 bg-gray-200 text-gray-800 rounded flex items-center justify-center text-sm font-semibold shadow"
-                                            >
                                                 +{{ $remaining }}
                                             </button>
                                             @break
                                         @endif
+
+
                                     @endforeach
+
                                      <button type="button"  wire:click.prevent="removeFile('all')"
                                         class="text-red-500 ms-2"><span class="text-2xl">x</span></button>
                                 </div>

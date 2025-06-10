@@ -682,7 +682,7 @@ public function generateThumbnail($filePath)
     {
         $editedMessage = Message::findOrFail((int)$this->editingMessageId);
 
-      $this->removeImage($editedMessage);
+        $this->removeImage($editedMessage);
 
         $this->cancelEdit();
     }

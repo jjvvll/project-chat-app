@@ -12,7 +12,7 @@
                                 @if ($message->message && !$message->is_forwarded)
                                         {{-- <p>{{ var_dump($editingMessageId) }} | {{ var_dump($message->id) }}</p> --}}
                                             @if ((int)$editingMessageId === $message->id)
-                                                <p class="text-xs text-red-500"> Editing Message ID: {{ $editingMessageId }}</p>
+                                                <p class="text-xs text-red-500"> Editing Message</p>
 
 
                                                   <textarea
@@ -90,7 +90,7 @@
                                             @else
                                                 <div class="{{$isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
                                                                     'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none'}}
-                                                                  w-full px-4 py-2  [overflow-wrap:anywhere] text-ellipsis">
+                                                                  w-full px-4 py-2 overflow-wrap:anywhere text-ellipsis">
                                                 {!! $search ? $this->highlightText($message->message, $search) : nl2br(e($message->message)) !!}
 
                                             </div>
@@ -104,8 +104,8 @@
                                             <!-- Message bubble (keep your existing rounded styles) -->
                                             <div class="{{$isSender ? 'bg-indigo-600 rounded-tr-none text-white ' : 'bg-gray-200  rounded-tl-none' }} rounded-lg  p-3 max-w-md ">
                                                 <div class="border-l-2 {{$isSender ? 'border-white ml-1 mr-1 pl-1 pr-1' : 'border-gray-500 ml-1 mr-1 pl-1 pr-1' }} ">
-                                                        <div class="[overflow-wrap:anywhere] ">
-                                                            {!! $search ? $this->highlightText($message->message, $search) : e($message->message) !!}
+                                                        <div class="overflow-wrap:anywhere ">
+                                                            {!! $search ? $this->highlightText($message->message, $search) :  nl2br(e($message->message)) !!}
                                                         </div>
                                                 </div>
 
@@ -121,14 +121,8 @@
                                         $thumbnails = json_decode($message->thumbnail_path, true);
                                     @endphp
 
-                                            @if (is_array($folderPaths) && $message->is_forwarded && $isSender)
-                                                <p class="text-sm italic text-gray-500 text-right my-2">
-                                                    You forwarded {{ count($folderPaths) === 1 ? 'an image/file' : 'images/files' }}.
-                                                </p>
-                                            @elseif (is_array($folderPaths)  && $message->is_forwarded )
-                                                 <p class="text-sm italic text-gray-500 text-left my-2">
-                                                    {{$message->sender->name}} forwarded {{ count($folderPaths) === 1 ? 'an image/file' : 'images/files' }}.
-                                                </p>
+                                            @if (is_array($folderPaths) && $message->is_forwarded)
+                                              <x-message-forward-label :folderPaths="$folderPaths" :message="$message" :isSender="$isSender"/>
                                             @endif
 
                                 <div class="{{ ( is_array($folderPaths) && count($folderPaths) > 1 )? 'flex flex-wrap gap-1 mt-2 p-4 rounded ' .

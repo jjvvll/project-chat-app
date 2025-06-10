@@ -3,7 +3,7 @@
     <div class="absolute top-1/2 transform -translate-y-1/2  text-xs text-gray-500 {{ $isSender ? '-left-8' : '-right-8' }}"
                                             x-data="{ showReactions: false }">
 
-                                            @if (!$isSender)
+                                            @if (!$isSender && !$message->deleted_at)
                                                 <button
                                                 @click="showReactions = true"
                                                 class="flex items-center justify-center w-6 h-6"
