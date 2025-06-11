@@ -5,9 +5,11 @@ namespace App\View\Components;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
+use Livewire\WithFileUploads;
 
 class MessageBubble extends Component
 {
+        use WithFileUploads;
     /**
      * Create a new component instance.
      */
@@ -18,6 +20,8 @@ class MessageBubble extends Component
     public $editingMessageId = null;    // ?int = nullable integer
     public $editedContent = null;    // ?string = nullable string
     public $selectedIndices;
+    // public array $files = [];
+    // public $isTempUpload;
 
      public function __construct($message, $isSender, $search,$editingMessageId, $editedContent, $selectedIndices)
     {
@@ -29,6 +33,7 @@ class MessageBubble extends Component
         $this->editedContent = $editedContent;
 
         $this->selectedIndices =$selectedIndices;
+
     }
 
     /**

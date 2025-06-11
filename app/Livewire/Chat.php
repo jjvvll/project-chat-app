@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Imagick;
-
+ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 
 class Chat extends Component
@@ -49,6 +49,7 @@ class Chat extends Component
     public $editingMessageId = null;
     public $editedContent = '';
     public array $selectedIndices = [];
+    public $isTempUpload = false;
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -614,49 +615,7 @@ public function removeFile($index = null)
     }
 }
 
-public function generateThumbnail($filePath)
-{
-    $thumbnailDir = storage_path('app/public/chat_files/thumbnails/');
 
-    if (!file_exists($thumbnailDir)) {
-        mkdir($thumbnailDir, 0775, true);
-    }
-
-    $imagick = new \Imagick();
-
-    try {
-        $filenameWithoutExt = pathinfo($filePath, PATHINFO_FILENAME);
-        $extension = strtolower($filenameWithoutExt);
-
-        if ($extension === 'pdf') {
-            $imagick->setResolution(150, 150); // For better PDF quality
-            $imagick->readImage($filePath . '[0]'); // Only first page
-        } else {
-            $imagick->readImage($filePath);
-        }
-
-        $imagick->setImageFormat('jpeg');
-        $imagick->thumbnailImage(150, 150, true);
-
-        $thumbnailFilename = basename($filenameWithoutExt) . '.jpg';
-
-        // Full physical path to save the image
-        $thumbnailFullPath = storage_path('app/public/chat_files/thumbnails/' . $thumbnailFilename);
-
-        $imagick->writeImage($thumbnailFullPath);
-
-
-
-        $imagick->clear();
-        $imagick->destroy();
-
-        return 'storage/chat_files/thumbnails/' . $thumbnailFilename;
-
-    } catch (\Exception $e) {
-        logger()->error('Thumbnail generation failed: ' . $e->getMessage());
-        return null;
-    }
-}
 
 
       public function editMessage($messageId, $currentContent)
@@ -788,6 +747,8 @@ public function generateThumbnail($filePath)
                 $message->delete();
             }
 
+            $this->addImageToAMessage($message);
+
 
              $updatedMessage = Message::withTrashed()->find($message->id);
 
@@ -809,6 +770,127 @@ public function generateThumbnail($filePath)
 
 
                 broadcast(event: new MessageDeleted($updatedMessage)); //same purpose, send an event to update message bubble of the receiver
+    }
+
+    public function addImageToAMessage($message){
+
+         if (empty($this->files)) {
+            return; // Do nothing if files is empty
+        }
+
+        if ($this->files && is_array($this->files)) {
+            $fileNames = [];
+            $fileOriginalNames = [];
+            $folderPaths = [];
+            $fileTypes = [];
+            $thumbnailPaths = [];
+
+            foreach ($this->files as $index => $file) {
+                $fileNames[] = $file->hashName();
+                $fileOriginalNames[] = $file->getClientOriginalName();
+                $folderPaths[] = $file->store('chat_files', 'public');
+                $fileTypes[] = $file->getMimeType();
+
+                //convert that to a full path for Imagick:
+                $fullPath = storage_path('app/public/' . $folderPaths[$index]);
+
+                // Then pass $fullPath to your generateThumbnail function:
+                $thumbnailPaths[] = $this->generateThumbnail($fullPath);
+
+            }
+        }
+
+         $message->update([
+                // 'message' => $this->editedContent ?? $message->message, // Keep existing if no edit
+
+                // Merge and encode file arrays
+                'file_name' => !empty($fileNames)
+                    ? json_encode(array_merge(
+                        json_decode($message->file_name ?? '[]', true),
+                        $fileNames
+                    ))
+                    : $message->file_name,
+
+                'file_original_name' => !empty($fileOriginalNames)
+                    ? json_encode(array_merge(
+                        json_decode($message->file_original_name ?? '[]', true),
+                        $fileOriginalNames
+                    ))
+                    : $message->file_original_name,
+
+                'folder_path' => !empty($folderPaths)
+                    ? json_encode(array_merge(
+                        json_decode($message->folder_path ?? '[]', true),
+                        $folderPaths
+                    ))
+                    : $message->folder_path,
+
+                'file_type' => !empty($fileTypes)
+                    ? json_encode(array_merge(
+                        json_decode($message->file_type ?? '[]', true),
+                        $fileTypes
+                    ))
+                    : $message->file_type,
+
+                'thumbnail_path' => !empty($thumbnailPaths)
+                    ? json_encode(array_merge(
+                        json_decode($message->thumbnail_path ?? '[]', true),
+                        $thumbnailPaths
+                    ))
+                    : $message->thumbnail_path,
+            ]);
+
+            $this->files = [];
+    }
+
+
+    public function generateThumbnail($filePath)
+    {
+        $thumbnailDir = storage_path('app/public/chat_files/thumbnails/');
+
+        if (!file_exists($thumbnailDir)) {
+            mkdir($thumbnailDir, 0775, true);
+        }
+
+        $imagick = new \Imagick();
+
+        try {
+            $filenameWithoutExt = pathinfo($filePath, PATHINFO_FILENAME);
+            $extension = strtolower($filenameWithoutExt);
+
+            if ($extension === 'pdf') {
+                $imagick->setResolution(150, 150); // For better PDF quality
+                $imagick->readImage($filePath . '[0]'); // Only first page
+            } else {
+                $imagick->readImage($filePath);
+            }
+
+            $imagick->setImageFormat('jpeg');
+            $imagick->thumbnailImage(150, 150, true);
+
+            $thumbnailFilename = basename($filenameWithoutExt) . '.jpg';
+
+            // Full physical path to save the image
+            $thumbnailFullPath = storage_path('app/public/chat_files/thumbnails/' . $thumbnailFilename);
+
+            $imagick->writeImage($thumbnailFullPath);
+
+
+
+            $imagick->clear();
+            $imagick->destroy();
+
+            return 'storage/chat_files/thumbnails/' . $thumbnailFilename;
+
+        } catch (\Exception $e) {
+            logger()->error('Thumbnail generation failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function isTemporaryFile($file){
+
+        return $file instanceof TemporaryUploadedFile;
     }
 
 

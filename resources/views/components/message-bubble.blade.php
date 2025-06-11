@@ -116,9 +116,14 @@
 
 
                                     @php
-                                        $folderPaths = json_decode($message->folder_path, true);
-                                        $originalNames = json_decode($message->file_original_name, true);
-                                        $thumbnails = json_decode($message->thumbnail_path, true);
+                                        $folderPaths = json_decode($message->folder_path, true) ?? [];
+                                        $originalNames = json_decode($message->file_original_name, true) ?? [];
+                                        $thumbnails = json_decode($message->thumbnail_path, true) ?? [];
+
+                                        // $files = $files ? $files : [];
+
+                                        // $folderPaths = array_merge($folderPaths, $files);
+
                                     @endphp
 
                                             @if (is_array($folderPaths) && $message->is_forwarded)
@@ -132,6 +137,7 @@
                                         @if (is_array($folderPaths) && is_array($originalNames))
                                             @foreach( $folderPaths as $index => $folderPath)
 
+                                        {{-- $this->isTemporaryFile($folderPath)? $folderPath->temporaryUrl() :  --}}
                                             @php
                                                 strpos(mime_content_type('storage/'.$folderPath), 'image/') === 0 ? $isImage = true : $isImage = false
                                             @endphp
@@ -177,7 +183,26 @@
                                                                                 </span>
                                                                     </div>
                                                                 @endif
+                                                        {{-- @else
+                                                                    @if ($imgType)
+                                                                        <img src="{{ $folderPath->temporaryUrl() }}" alt="file"
+                                                                            class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
+                                                                    @else
+
+                                                                        <div class="w-24 h-24 object-cover border cursor-pointer hover:opacity-90 mt-2 bg-gray-300 text-white' }}">
+                                                                            {{ Str::limit($folderPath->getClientOriginalName(), 5) }}
+                                                                        </div>
+                                                                    @endif
+                                                                            <button
+                                                                            wire:click.prevent="removeFile({{ $index }})"
+                                                                            class="absolute top-0 right-0 bg-white rounded-full text-xs text-red-600 hover:text-white hover:bg-red-500 w-5 h-5 flex items-center justify-center shadow -mt-1 -mr-1"
+                                                                            title="Remove"
+                                                                        >
+                                                                            &times;
+                                                                        </button>
+                                                                    </div> --}}
                                                         @endif
+
                                                         <button type="button"
                                                                         wire:click="toggleSelectedIndex({{$index}})"
                                                                         class="absolute top-0 right-0 text-red-500 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow -translate-y-1/2 translate-x-1/2">
@@ -271,6 +296,9 @@
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                             </svg>
                                                         </button>
+                                                        <div x-data>
+                                                            <button @click="document.getElementById('fileUpload').click()">Upload</button>
+                                                        </div>
                                                     </div>
                                         @endif
 

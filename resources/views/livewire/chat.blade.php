@@ -326,8 +326,14 @@
 
                                         @elseif ($index === 3)
                                             @php $remaining = count($files) - 3; @endphp
+
+                                            <button
+                                                @click.prevent="showModal = true"
+                                                class="inline-flex items-center justify-center"
+                                            >
                                                 +{{ $remaining }}
                                             </button>
+
                                             @break
                                         @endif
 
