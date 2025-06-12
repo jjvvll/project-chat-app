@@ -20,10 +20,12 @@ class MessageBubble extends Component
     public $editingMessageId = null;    // ?int = nullable integer
     public $editedContent = null;    // ?string = nullable string
     public $selectedIndices;
+    public $textBox;
+    public array $filePreviews = [];
     // public array $files = [];
     // public $isTempUpload;
 
-     public function __construct($message, $isSender, $search,$editingMessageId, $editedContent, $selectedIndices)
+     public function __construct($message, $isSender, $search,$editingMessageId, $editedContent, $selectedIndices, $textBox, $filePreviews)
     {
         $this->message = $message;
         $this->isSender = $isSender;
@@ -33,6 +35,8 @@ class MessageBubble extends Component
         $this->editedContent = $editedContent;
 
         $this->selectedIndices =$selectedIndices;
+        $this->textBox = $textBox;
+        $this->filePreviews = $filePreviews;
 
     }
 

@@ -9,7 +9,7 @@
                                             </div>
                                         @endif
 
-                                @if ($message->message && !$message->is_forwarded)
+                                @if ($message->message && !$message->is_forwarded || ($textBox && !$message->is_forwarded))
                                         {{-- <p>{{ var_dump($editingMessageId) }} | {{ var_dump($message->id) }}</p> --}}
                                             @if ((int)$editingMessageId === $message->id)
                                                 <p class="text-xs text-red-500"> Editing Message</p>
@@ -121,8 +121,12 @@
                                         $thumbnails = json_decode($message->thumbnail_path, true) ?? [];
 
                                         // $files = $files ? $files : [];
+                                        $countOriginalFiles = count($folderPaths);
+                                        $folderPaths = array_merge($folderPaths, $filePreviews);
 
-                                        // $folderPaths = array_merge($folderPaths, $files);
+                                        // if(!empty($filePreviews)){
+                                        //     dd( $folderPaths);
+                                        // }
 
                                     @endphp
 
@@ -136,10 +140,16 @@
 >
                                         @if (is_array($folderPaths) && is_array($originalNames))
                                             @foreach( $folderPaths as $index => $folderPath)
-
                                         {{-- $this->isTemporaryFile($folderPath)? $folderPath->temporaryUrl() :  --}}
                                             @php
-                                                strpos(mime_content_type('storage/'.$folderPath), 'image/') === 0 ? $isImage = true : $isImage = false
+
+                                                if((bool)$this->isLivewireTempUrl($folderPath)){
+                                                    strpos( $this->getMimeTypeOfTempUrl($folderPath), 'image/')=== 0 ? $isImage = true : $isImage = false;
+                                                }else{
+                                                    strpos(mime_content_type( 'storage/'.$folderPath), 'image/') === 0 ? $isImage = true : $isImage = false;
+                                                }
+
+
                                             @endphp
 
                                                 @php
@@ -152,7 +162,7 @@
                                                         @if (in_array($index, $selectedIndices))
                                                                      <div
                                                                     class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" ></div>
-                                                        @else
+                                                        @elseif(!(bool)$this->isLivewireTempUrl($folderPath))
                                                                 @if ($isImage)
                                                                     <img src="{{ asset($thumbnail) }}"
                                                                     alt="file"
@@ -183,28 +193,35 @@
                                                                                 </span>
                                                                     </div>
                                                                 @endif
-                                                        {{-- @else
-                                                                    @if ($imgType)
-                                                                        <img src="{{ $folderPath->temporaryUrl() }}" alt="file"
-                                                                            class="w-12 h-12 rounded-lg object-cover border border-gray-300 shadow-md" />
+                                                        @else
+                                                                    @if ($isImage)
+                                                                        <img src="{{ $folderPath }}" alt="file"
+                                                                            class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" />
                                                                     @else
 
-                                                                        <div class="w-24 h-24 object-cover border cursor-pointer hover:opacity-90 mt-2 bg-gray-300 text-white' }}">
-                                                                            {{ Str::limit($folderPath->getClientOriginalName(), 5) }}
+                                                                        <div class="w-24 h-24 object-cover border cursor-pointer hover:opacity-90 mt-2 bg-gray-300">
+                                                                                <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
+                                                                                        📄 File
+                                                                                </div>
+
+                                                                                <span class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs text-center p-1 truncate"
+                                                                                    title="{{ $this->getNameOfTempFile($folderPath) }}">
+                                                                                     {{ $this->getNameOfTempFile($folderPath)}}
+                                                                                </span>
                                                                         </div>
                                                                     @endif
-                                                                            <button
-                                                                            wire:click.prevent="removeFile({{ $index }})"
+                                                                            {{-- <button
+                                                                            wire:click.prevent="removeFile({{  abs($countOrinalFiles - $index) }})"
                                                                             class="absolute top-0 right-0 bg-white rounded-full text-xs text-red-600 hover:text-white hover:bg-red-500 w-5 h-5 flex items-center justify-center shadow -mt-1 -mr-1"
                                                                             title="Remove"
                                                                         >
                                                                             &times;
-                                                                        </button>
-                                                                    </div> --}}
+                                                                        </button> --}}
+
                                                         @endif
 
                                                         <button type="button"
-                                                                        wire:click="toggleSelectedIndex({{$index}})"
+                                                                        wire:click="handleClick('{{ $folderPath }}', {{ $index }}, {{ $countOriginalFiles }})"
                                                                         class="absolute top-0 right-0 text-red-500 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow -translate-y-1/2 translate-x-1/2">
                                                                     <span class="text-xs font-bold">x</span>
                                                                 </button>
@@ -299,6 +316,9 @@
                                                         <div x-data>
                                                             <button @click="document.getElementById('fileUpload').click()">Upload</button>
                                                         </div>
+                                                        <button wire:click="openTextBox" >
+                                                            Add text
+                                                        </button>
                                                     </div>
                                         @endif
 

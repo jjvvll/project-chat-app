@@ -137,10 +137,10 @@
                                     </h5>
 
                                 {{-- <div class="{{$message->parent_id ? ($isSender ? 'bg-indigo-600 rounded-tr-none rounded-3xl px-3 pt-4' : 'bg-gray-200 rounded-tl-none rounded-3xl px-3 pt-4') : '' }} "> --}}
-                                    <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null" :index="$index ?? null">
+                                    <x-message-reply-bubble :message="$message" :isSender="$isSender"  :editingMessageId="$editingMessageId ?? null" :index="$index ?? null" >
 
                                         <x-message-reactions :message="$message" :isSender="$isSender" >
-                                            <x-message-bubble :message="$message" :selectedIndices="$selectedIndices ?? null" :isSender="$isSender" :search="$search"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null"/>
+                                            <x-message-bubble :message="$message" :selectedIndices="$selectedIndices ?? null" :isSender="$isSender" :search="$search"   :editingMessageId="$editingMessageId ?? null" :editedContent="$editedContent ?? null" :textBox="$textBox ?? null" :filePreviews="(int)$editingMessageId === $message->id ? $filePreviews ?? [] : []"/>
                                         </x-messsage-reactions>
                                     </x-message-reply-bubble>
                                 {{-- </div> --}}
@@ -294,7 +294,7 @@
 
 
                         {{-- File Preview --}}
-                        @if ($files)
+                        @if ($files && empty($editingMessageId))
                             <div x-data="{ showModal: false }">
                                 <!-- Thumbnail previews -->
                                 <div class="flex items-center gap-2 relative">

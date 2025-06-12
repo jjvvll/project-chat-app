@@ -33,6 +33,8 @@ class Chat extends Component
 
     public $file;
     public $files  = [];
+    public $filePreviews = []; // Holds array of strings (temp URLs)
+    public $fileMap;
     public $lastMessageTimestamp;
     public $noMoreMessages;
 
@@ -50,6 +52,8 @@ class Chat extends Component
     public $editedContent = '';
     public array $selectedIndices = [];
     public $isTempUpload = false;
+
+    public $textBox = false;
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -612,7 +616,11 @@ public function removeFile($index = null)
     } elseif (is_numeric($index) && isset($this->files[$index])) {
         unset($this->files[$index]);
         $this->files = array_values($this->files); // reindex array
+
+        $this->updatedFiles();
     }
+
+
 }
 
 
@@ -621,7 +629,7 @@ public function removeFile($index = null)
       public function editMessage($messageId, $currentContent)
     {
         $this->editingMessageId = $messageId;
-        $this->editedContent = $currentContent;
+        $this->editedContent = $currentContent ?? null;
 
         // $working = Message::find(707); // A message where edit works
         // $broken = Message::find(708); // Your problematic message
@@ -656,6 +664,7 @@ public function removeFile($index = null)
         $this->editingMessageId = null;
         $this->editedContent = '';
         $this->selectedIndices = [];
+        $this->textBox = false;
     }
 
     public function toggleSelectedIndex($index)
@@ -735,7 +744,7 @@ public function removeFile($index = null)
 
             // Update the message record with the new JSON arrays
             $message->update([
-                'message' => $this->editedContent ?? null,
+                'message' => !empty($this->editedContent) ? $this->editedContent : null,
                 'file_name' => !empty($fileNames) ? json_encode($fileNames) : null,
                 'file_original_name' => !empty($fileOriginalNames) ? json_encode($fileOriginalNames) : null,
                 'folder_path' => !empty($folderPaths) ? json_encode($folderPaths) : null,
@@ -841,6 +850,8 @@ public function removeFile($index = null)
             ]);
 
             $this->files = [];
+             $this->filePreviews = [];
+            $this->textBox = false;
     }
 
 
@@ -888,9 +899,63 @@ public function removeFile($index = null)
         }
     }
 
-    public function isTemporaryFile($file){
+    public function openTextBox(){
+        $this->textBox = true;
+    }
 
-        return $file instanceof TemporaryUploadedFile;
+    public function updatedFiles()
+    {
+        if( !empty($this->editingMessageId)){
+             $this->filePreviews = collect($this->files)->map(function ($file) {
+            if ($file instanceof TemporaryUploadedFile && str_starts_with($file->getMimeType(), 'image/')) {
+                return $file->temporaryUrl(); // Still return URL for images
+            }
+
+            return '/livewire/preview-file/' . $file->getClientOriginalName(); // Return filename for non-images
+        })->toArray();
+
+
+      $this->fileMap = collect($this->files)->mapWithKeys(function ($file) {
+            if ($file instanceof TemporaryUploadedFile && str_starts_with($file->getMimeType(), 'image/')) {
+                return [$file->temporaryUrl() => $file];
+            }
+
+            return ['/livewire/preview-file/' . $file->getClientOriginalName() => $file];
+        }); // put the $this->files in a hasmap
+        }
+
+    }
+
+    public function isLivewireTempUrl(string $url): bool
+    {
+
+       return str_contains($url, '/livewire/preview-file/');
+    }
+
+    public function getMimeTypeOfTempUrl($url){
+
+        // foreach ($this->files as $file) {
+        //         if ($file->temporaryUrl() === $url) {
+        //             return $file->getMimeType(); // <- This works!
+        //         }
+        //     }
+            //alternative hashmap
+            return $this->fileMap[$url]?->getMimeType();
+    }
+
+    public function getNameOfTempFile($url){
+       return Str::replaceFirst('/livewire/preview-file/', '', $url);
+    }
+
+    public function handleClick($folderPath, $index, $countOriginalFiles)
+
+    {
+        if ($this->isLivewireTempUrl($folderPath)) {
+            $this->removeFile($index - $countOriginalFiles);
+
+        } else {
+            $this->toggleSelectedIndex($index);
+        }
     }
 
 
