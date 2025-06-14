@@ -662,6 +662,9 @@ public function removeFile($index = null)
     public function cancelEdit()
     {
         $this->editingMessageId = null;
+        $this->files = [];
+        $this->filePreviews = []; // Holds array of strings (temp URLs)
+        $this->fileMap = null;
         $this->editedContent = '';
         $this->selectedIndices = [];
         $this->textBox = false;
