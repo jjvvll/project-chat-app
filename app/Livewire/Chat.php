@@ -622,10 +622,6 @@ public function removeFile($index = null)
 
 
 }
-
-
-
-
       public function editMessage($messageId, $currentContent)
     {
         $this->editingMessageId = $messageId;
@@ -726,7 +722,7 @@ public function removeFile($index = null)
 
             // Rename and move thumbnail file if it exists
             if ($thumbnailPath && file_exists(storage_path('app/public/' . $relativePath))) {
-                $newThumbName = "{$ownerName}_{$dateStr}_" . basename($thumbnailPath);
+                $newThumbName = "{$ownerName}_{$dateStr}_thumb" . basename($thumbnailPath);
                 rename(storage_path('app/public/' . $relativePath), "{$toBeDeletedFolder}/{$newThumbName}");
             }
 

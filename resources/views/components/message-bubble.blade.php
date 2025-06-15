@@ -136,7 +136,8 @@
 
                                 <div class="{{ ( is_array($folderPaths) && count($folderPaths) > 1 )? 'flex flex-wrap gap-1 mt-2 p-4 rounded ' .
                                             ($isSender ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none' :
-                                                                    'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none') : '' }}"
+                                                                    'bg-gray-200  text-gray-900 rounded-3xl rounded-tl-none') : '' }}
+                                                                    {{(count($folderPaths) === 1)&&$isSender ? 'flex justify-end' : ''}}"
 >
                                         @if (is_array($folderPaths) && is_array($originalNames))
                                             @foreach( $folderPaths as $index => $folderPath)
@@ -158,22 +159,23 @@
                                                 @endphp
 
                                                 @if ((int)$editingMessageId === $message->id)
-                                                   <div class="relative">
-                                                        @if (in_array($index, $selectedIndices))
-                                                                     <div
-                                                                    class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" ></div>
-                                                        @elseif(!(bool)$this->isLivewireTempUrl($folderPath))
+                                                   <div class="relative {{in_array($index, $selectedIndices)
+                                                                                ? 'border-2 border-red-500 rounded-lg mt-2'
+                                                                                : 'border-2 rounded-lg  mt-2' }} {{(count($folderPaths) > 1) ? 'w-24 h-24' : 'w-30 h-30' }} ">
+
+                                                        @if(!(bool)$this->isLivewireTempUrl($folderPath))
                                                                 @if ($isImage)
                                                                     <img src="{{ asset($thumbnail) }}"
                                                                     alt="file"
-                                                                    class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" />
+                                                                    class=" w-full h-full {{in_array($index, $selectedIndices) ? 'opacity-10' : ''}}
+                                                                            object-cover cursor-pointer hover:opacity-90" />
                                                                 @else
                                                                         @php
                                                                             $fullPath = storage_path('app/public/' . $folderPath);
                                                                             $mimeType = file_exists($fullPath) ? mime_content_type($fullPath) : '';
                                                                         @endphp
 
-                                                                        <div class="w-24 h-24 object-cover border cursor-pointer hover:opacity-90 mt-2 bg-gray-300 {{ $isSender ? 'text-white' : 'text-black' }}">
+                                                                        <div class="w-full h-full object-cover cursor-pointer hover:opacity-90  bg-gray-300 {{ $isSender ? 'text-white' : 'text-black' }}">
                                                                                 @if($mimeType === 'application/pdf')
                                                                                     <img src="{{ asset($thumbnail) }}"
                                                                                         alt="File preview" class="w-full h-full object-cover rounded" />
@@ -196,11 +198,11 @@
                                                         @else
                                                                     @if ($isImage)
                                                                         <img src="{{ $folderPath }}" alt="file"
-                                                                            class="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 mt-2" />
+                                                                            class="w-full h-full object-cover cursor-pointer hover:opacity-90 " />
                                                                     @else
 
-                                                                        <div class="w-24 h-24 object-cover border cursor-pointer hover:opacity-90 mt-2 bg-gray-300">
-                                                                                <div class="w-full h-full flex items-center justify-center bg-white text-black rounded text-xl font-bold">
+                                                                        <div class="w-full h-full object-cover cursor-pointer hover:opacity-90  bg-gray-300">
+                                                                                <div class="w-full h-full flex justify-center items-center bg-white text-black rounded text-xl font-bold">
                                                                                         📄 File
                                                                                 </div>
 
@@ -302,7 +304,7 @@
 
                                 </div>
                                 @if ((int)$editingMessageId === $message->id)
-                                             <div class="flex gap-2 mt-2">
+                                             <div class="flex gap-2 mt-2 {{(count($folderPaths) === 1) ? 'justify-end' : ''}}">
                                                         <button wire:click="saveEditedMessage" >
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -326,7 +328,7 @@
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
                                                             </svg>
                                                         </button>
-                                                    </div>
+                                            </div>
                                         @endif
 
                             @else
