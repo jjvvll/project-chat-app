@@ -85,6 +85,7 @@
                             <p class="text-sm text-gray-500 mb-2">You've reached the end</p>
                         @endif
                     </div>
+
                     @foreach ($messages as $index => $message)
 
                       {{-- @if ($message->relationLoaded('sender'))
@@ -145,10 +146,23 @@
                                     </x-message-reply-bubble>
                                 {{-- </div> --}}
                                 </x-message-actions>
+                                    <div class="flex items-center gap-2 mt-1 justify-end">
+                                        @if (!is_null($mostRecentMessage) && ($mostRecentMessage->id === $message->id))
+                                            @if ($mostRecentMessage->receiver->profile_photo)
+                                                <img src="{{ asset('storage/' . $mostRecentMessage->receiver->profile_photo) }}"
+                                                    alt="{{ $mostRecentMessage->receiver->name }}"
+                                                    class="w-6 h-6 rounded-full object-cover border-2 border-white shadow-sm">
+                                            @else
+                                                <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm">
+                                                    {{ strtoupper(substr($mostRecentMessage->receiver->name, 0, 1)) }}
+                                                </div>
+                                            @endif
+                                        @endif
 
-                                    <h6 class="text-xs text-gray-500 mt-1 {{  $isSender ? 'ml-auto' : 'mr-auto'}}">
-                                        {{ $timestamp }}
-                                    </h6>
+                                        <h6 class="text-xs text-gray-500">
+                                            {{ $timestamp }}
+                                        </h6>
+                                    </div>
                                 </div>
                             </div>
                         </div>

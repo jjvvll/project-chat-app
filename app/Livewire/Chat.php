@@ -10,6 +10,7 @@ use App\Events\MessageSentEvent;
 use App\Events\UnreadMessage;
 use App\Events\MessageReaction;
 use App\Events\MessageDeleted;
+use App\Events\isMessageSeen;
 use App\Events\listenEditedMessage;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Imagick;
  use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+
+
 
 
 class Chat extends Component
@@ -54,6 +57,8 @@ class Chat extends Component
     public $isTempUpload = false;
 
     public $textBox = false;
+    public  $mostRecentMessage = null;
+
     public function mount($userId){
         $this->dispatch('messages-updated');
         // dd($userId->name);
@@ -65,6 +70,9 @@ class Chat extends Component
         $this->messages =  $this->getMessages();
 
         $this->markMessagesAsRead();
+        $this->getMostRecentReadMessage();
+
+        broadcast(new isMessageSeen(  $this->senderId,  $this->receiverId))->toOthers();
 
         // Exclude sender and receiver
         $excludeIds = [$this->senderId, $this->receiverId];
@@ -78,11 +86,28 @@ class Chat extends Component
 
     public function render()
     {
-        $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
 
         $this->markMessagesAsRead();
 
+        $this->messages->loadMissing('sender', 'receiver', 'parent.sender');
+
         return view('livewire.chat');
+    }
+
+    public function getMostRecentReadMessage(){
+        $currentUserId = auth()->id();
+
+        // 1. Get the latest message sent by current user where is_read is true
+        $this->mostRecentMessage = Message::with('sender:id,name,profile_photo', 'receiver:id,name,profile_photo', 'parent.sender')
+            ->where('sender_id', $currentUserId)
+            ->where('is_read', true)
+            ->orderByDesc('created_at')
+            ->first();
+
+        // 2. Get the latest message overall from current user (regardless of is_read)
+        // $latestMessageFromUser = Message::where('sender_id', $currentUserId)
+        //     ->orderByDesc('created_at')
+        //     ->first();
     }
 
     public function sendMessage(){
@@ -117,7 +142,6 @@ class Chat extends Component
         $this->file =null;
         $this->replyingTo = null;
 
-
         #dispatching event to scroll to the bottom
         $this->dispatch('messages-updated');
     }
@@ -133,11 +157,17 @@ class Chat extends Component
         ->where('is_read', false)->count();
     }
 
+     #[On('echo-private:seen-channel.{receiverId}.{senderId},isMessageSeen')]
+    public function listenIsMessageSeen($event){
+         $this->getMostRecentReadMessage();
+    }
+
     #[On('echo-private:chat-channel.{senderId}.{receiverId},MessageSentEvent')]
     public function listenMessage($event){
 
         // 1. Eager load the new message with relationships
         $newMessage = Message::find($event['message']['id']);
+
 
         // 3. Add the new message (relationships stay loaded)
         $this->messages = $this->messages->push($newMessage);
@@ -145,8 +175,10 @@ class Chat extends Component
          // Load relationships before pushing (to prevent lazy-loading)
         $this->messages->loadMissing('sender', 'receiver','parent.sender'); // Adjust to your needs
 
-         #dispatching event to scroll to the bottom
-         $this->dispatch(event: 'messages-updated');
+         #dispatching event to scroll to the     bottom
+        broadcast(new isMessageSeen(  $this->senderId,  $this->receiverId))->toOthers();
+
+        $this->dispatch(event: 'messages-updated');
     }
 
     public function getMessages(){
