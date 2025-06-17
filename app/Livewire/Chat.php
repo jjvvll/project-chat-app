@@ -395,7 +395,7 @@ class Chat extends Component
     }
 
     /**
-     * Function: prevMatch
+     * Function: prevMatch/
      */
     public function prevMatch()
     {
