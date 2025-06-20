@@ -155,7 +155,7 @@
 
                                                 @php
                                                     $originalName = $originalNames[$index] ?? 'Unknown';
-                                                     $thumbnail = $thumbnails[$index] ?? 'Unknown';
+                                                     $thumbnail = $thumbnails[$index] ?? 'Unknown';////
                                                 @endphp
 
                                                 @if ((int)$editingMessageId === $message->id)
