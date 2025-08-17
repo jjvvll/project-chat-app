@@ -32,7 +32,7 @@ WORKDIR /var/www
 COPY composer.json composer.lock ./
 
 # Install dependencies
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-pdo_pgsql
+RUN composer install --no-dev --optimize-autoloader
 
 # Copy application files
 COPY . .

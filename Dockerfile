@@ -1,7 +1,7 @@
 # Main Laravel App Dockerfile
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies including PostgreSQL
 RUN apk add --no-cache \
     git \
     curl \
@@ -12,11 +12,13 @@ RUN apk add --no-cache \
     unzip \
     nodejs \
     npm \
-    nginx
+    nginx \
+    postgresql-dev
 
-# Install PHP extensions (POSIX and PCNTL included for consistency)
+# Install PHP extensions (including PostgreSQL support)
 RUN docker-php-ext-install \
     pdo_mysql \
+    pdo_pgsql \
     mbstring \
     exif \
     pcntl \
