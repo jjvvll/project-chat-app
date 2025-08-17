@@ -76,6 +76,13 @@
             "php-http/discovery": true
         }
     },
+
+    "require": {
+    "ext-pdo_pgsql": "*"
+    },
+
     "minimum-stability": "stable",
     "prefer-stable": true
+
+
 }
