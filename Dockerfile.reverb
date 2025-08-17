@@ -1,7 +1,6 @@
-# Main Laravel App Dockerfile
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies including PostgreSQL
+# Install system dependencies
 RUN apk add --no-cache \
     git \
     curl \
@@ -12,10 +11,10 @@ RUN apk add --no-cache \
     unzip \
     nodejs \
     npm \
-    nginx \
-    postgresql-dev
+    postgresql-dev \
+    bash
 
-# Install PHP extensions (including PostgreSQL support)
+# Install PHP extensions
 RUN docker-php-ext-install \
     pdo_mysql \
     pdo_pgsql \
@@ -29,53 +28,29 @@ RUN docker-php-ext-install \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www
 
-# Copy composer files
+# Copy and install dependencies
 COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
-# Install dependencies without lock file verification
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-plugins
-
-# If that fails, try updating the lock file in container
-RUN composer update --lock --no-scripts --no-plugins || true
-RUN composer install --no-dev --optimize-autoloader --no-scripts
-
-# Copy package.json files
 COPY package*.json ./
 RUN npm install
 
-# Copy application files
+# Copy application
 COPY . .
 
-# Build assets and complete composer install
-RUN npm run build && composer install --no-dev --optimize-autoloader
-
-# Make startup script executable
-RUN chmod +x start-app.sh
+# Build and cache
+RUN npm run build
+RUN php artisan config:cache || true
+RUN php artisan route:cache || true
+RUN php artisan view:cache || true
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache
-
-# Configure nginx
-RUN echo 'server { \
-    listen 8080; \
-    server_name _; \
-    root /var/www/public; \
-    index index.php; \
-    location / { \
-        try_files $uri $uri/ /index.php?$query_string; \
-    } \
-    location ~ \.php$ { \
-        fastcgi_pass 127.0.0.1:9000; \
-        fastcgi_index index.php; \
-        include fastcgi_params; \
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
-    } \
-}' > /etc/nginx/http.d/default.conf
+RUN chown -R www-data:www-data /var/www
+RUN chmod -R 755 /var/www/storage
 
 EXPOSE 8080
-CMD ["./start-app.sh"]
+
+# Simple start command
+CMD php artisan serve --host=0.0.0.0 --port=8080
