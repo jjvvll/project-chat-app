@@ -1,0 +1,48 @@
+# Reverb Service Dockerfile
+FROM php:8.2-cli-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    oniguruma-dev \
+    libxml2-dev \
+    zip \
+    unzip
+
+# Install PHP extensions including POSIX and PCNTL (required for Reverb)
+RUN docker-php-ext-install \
+    pdo_mysql \
+    mbstring \
+    pcntl \
+    bcmath \
+    gd \
+    posix
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www
+
+# Copy composer files first for better caching
+COPY composer.json composer.lock ./
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Copy application files
+COPY . .
+
+# Make the start script executable
+RUN chmod +x start-reverb.sh
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www
+
+# Expose port for Reverb
+EXPOSE 8080
+
+# Start Reverb
+CMD ["./start-reverb.sh"]
