@@ -8,9 +8,8 @@ use Pest\Mutate\Mutators\Visibility\FunctionPublicToProtected;
 
 class Message extends Model
 {
-
     use SoftDeletes;
-    protected $fillable =[
+    protected $fillable = [
         'sender_id',
         'receiver_id',
         'message',
@@ -27,22 +26,25 @@ class Message extends Model
 
     ];
     protected $casts = [
-    'file_name' => 'array',
-    'file_original_name' => 'array',
-    'folder_path' => 'array',
-    'file_type' => 'array',
-    'thumbnail_path' => 'array'
+        'file_name' => 'array',
+        'file_original_name' => 'array',
+        'folder_path' => 'array',
+        'file_type' => 'array',
+        'thumbnail_path' => 'array'
     ];
 
-    public function sender()  {
-        return $this->belongsTo(User::class,'sender_id', 'id' );
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id', 'id');
     }
 
-    public function receiver()  {
-        return $this->belongsTo(User::class,'receiver_id', 'id' );
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'receiver_id', 'id');
     }
 
-    public function parent(){
+    public function parent()
+    {
         return $this->belongsTo(Message::class, 'parent_id', 'id')->withTrashed();
     }
 
